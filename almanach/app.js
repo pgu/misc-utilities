@@ -38,15 +38,33 @@
   let rows = store.get("rows", DEFAULT_ROWS).filter((x) => C[x.c]);
   let year = store.get("year", ALMANACH.years.includes(now.getFullYear()) ? now.getFullYear() : ALMANACH.years[1]);
   let show = store.get("show", { pub: true, school: true });
+  // ---------- mon académie → ma zone ----------
+  const ACAD = C.FR.academies || { A: [], B: [], C: [] };
+  const zoneOf = (name) => Object.keys(ACAD).find((z) => ACAD[z].includes(name)) || "";
+  let myAcademy = store.get("academie", "Nantes");
+  if (!zoneOf(myAcademy)) myAcademy = "Nantes";
+  const myZone = () => zoneOf(myAcademy);
+  const isMine = (x) => x.c === "FR" && x.r && x.r === myZone();
   const regionNames = (cc) => ({ ...C[cc].regions.public, ...C[cc].regions.school });
   const rowLabel = (x) => {
-    const c = C[x.c], name = x.r ? regionNames(x.c)[x.r] || x.r : "";
+    const c = C[x.c], base = x.r ? regionNames(x.c)[x.r] || x.r : "", name = isMine(x) ? `${base} ★` : base;
     return { flag: c.flag, country: c.name, region: name, text: `${c.flag} ${c.name}${name ? " · " + name : ""}` };
   };
   const forRow = (x, list) => list.filter((h) => (x.r ? !h.r || h.r.includes(x.r) : !h.r));
   const publicOf = (x) => forRow(x, C[x.c].public);
   const schoolOf = (x) => forRow(x, C[x.c].school);
 
+  function renderMine() {
+    const z = myZone();
+    const list = Object.keys(ACAD).sort().map((k) => `<p><span class="zone ${k}" style="font-size:.8rem;padding:.05rem .5rem">Zone ${k}</span> ${ACAD[k].map((n) => (n === myAcademy ? `<strong>${n}</strong>` : n)).join(", ")}</p>`).join("");
+    $("#mine").innerHTML = `<span>📍 Mon académie</span>
+      <select id="acad" aria-label="Mon académie">${Object.values(ACAD).flat().sort((a, b) => a.localeCompare(b, "fr")).map((n) => `<option${n === myAcademy ? " selected" : ""}>${n}</option>`).join("")}</select>
+      <span>→ <span class="zone ${z}">Zone ${z}</span></span>
+      <button class="btn" id="addmine">+ Ajouter ma zone aux lignes</button>
+      <details><summary class="hint">Quelle académie dans quelle zone ?</summary>${list}<p class="hint">Corse et outre-mer ont leurs propres calendriers (non affichés ici).</p></details>`;
+    $("#acad").addEventListener("change", (e) => { myAcademy = e.target.value; store.set("academie", myAcademy); renderAll(); });
+    $("#addmine").addEventListener("click", () => { const x = { c: "FR", r: z }; if (!rows.some((y) => y.c === x.c && y.r === x.r)) rows.push(x); saveRows(); });
+  }
   function renderRows() {
     const opts = Object.entries(C).map(([k, c]) => `<option value="${k}">${c.flag} ${c.name}</option>`).join("");
     $("#rows").innerHTML = `
@@ -62,7 +80,7 @@
       const cc = $("#ac").value, regs = regionNames(cc);
       $("#ar").innerHTML = `<option value="">${Object.keys(regs).length ? "National (sans région)" : "National"}</option>` + Object.entries(regs).map(([k, n]) => {
         const kind = C[cc].regions.public[k] && C[cc].regions.school[k] ? "" : C[cc].regions.school[k] ? " (vacances)" : " (fériés)";
-        return `<option value="${k}">${n}${kind}</option>`;
+        return `<option value="${k}">${n}${kind}${cc === "FR" && k === myZone() ? ` ★ ${myAcademy}` : ""}</option>`;
       }).join("");
     };
     $("#ac").addEventListener("change", fillRegions); fillRegions();
@@ -163,7 +181,73 @@
         ${h.r && h.r.length > 1 ? `<p class="hint" style="margin:.2rem 0">Mêmes dates pour : ${h.r.map((c) => regionNames(x.c)[c] || c).join(", ")}</p>` : ""}`;
     }
   }
-  function setYear(y) { year = y; store.set("year", y); selected = null; renderAnnee(); renderListe(); }
+  function setYear(y) { year = y; store.set("year", y); selected = null; renderAnnee(); renderCalendrier(); renderListe(); }
+
+  // ---------- calendrier (12 mois, 6 par écran) ----------
+  const calState = Object.assign({ c: "FR", r: "", half: now.getMonth() < 6 ? 1 : 2, zones: ["A", "B", "C"], other: true }, store.get("cal", {}));
+  const isoWeek = (iso) => { const d = new Date(iso + "T00:00:00Z"); const dn = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - dn + 3); const y1 = Date.UTC(d.getUTCFullYear(), 0, 4); return 1 + Math.round(((d - y1) / 864e5 - 3 + ((new Date(y1).getUTCDay() + 6) % 7)) / 7); };
+  function renderCalendrier() {
+    const cc = calState.c, region = calState.r, y = year;
+    const regs = Object.entries(C[cc].regions.public).filter(([k]) => !(cc === "FR" && "ABC".includes(k)));
+    if (region && !regs.some(([k]) => k === region)) calState.r = "";
+    const pubMap = new Map();
+    forRow({ c: cc, r: calState.r }, C[cc].public).forEach((h) => pubMap.set(h.d, [...(pubMap.get(h.d) || []), h.n]));
+    // Bandes de vacances : 3 zones pour la France, une seule bande (région choisie) sinon.
+    const stripes = cc === "FR" ? ["A", "B", "C"].filter((z) => calState.zones.includes(z)) : calState.r && calState.other ? ["S"] : [];
+    const school = new Map();
+    const mark = (h, key) => { for (let d = h.s; d <= h.e; d = addDays(d, 1)) school.set(d, { ...(school.get(d) || {}), [key]: true }); };
+    if (cc === "FR") C.FR.school.forEach((h) => (h.r || []).filter((z) => stripes.includes(z)).forEach((z) => mark(h, z)));
+    else if (calState.r) forRow({ c: cc, r: calState.r }, C[cc].school).forEach((h) => mark(h, "S"));
+    const first = calState.half === 1 ? 0 : 6;
+    const months = Array.from({ length: 6 }, (_, k) => first + k);
+    const monthHtml = (m) => {
+      const n = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      let html = `<div class="mo"><h4>${MOIS_LONG[m]}</h4>`;
+      for (let d = 1; d <= 31; d++) {
+        if (d > n) { html += `<div class="cd empty"></div>`; continue; }
+        const iso = `${y}-${pad(m + 1)}-${pad(d)}`, wd = new Date(iso + "T00:00:00Z").getUTCDay(), ph = pubMap.get(iso);
+        const cls = `cd${wd === 6 ? " sat" : wd === 0 ? " sun" : ""}${ph ? " ph" : ""}${iso === TODAY ? " today" : ""}`;
+        const sz = school.get(iso) || {};
+        html += `<div class="${cls}"${ph ? ` title="${ph.join(" / ")}"` : ""}><span class="n">${d}</span><span class="w">${"DLMMJVS"[wd]}</span><span class="s">${ph ? ph[0] : ""}</span><span class="wk">${wd === 1 ? isoWeek(iso) : ""}</span><span class="sz">${stripes.map((k) => `<i class="${k}${sz[k] ? " on" : ""}"></i>`).join("")}</span></div>`;
+      }
+      return html + `</div>`;
+    };
+    const countryOpts = Object.entries(C).map(([k, c]) => `<option value="${k}"${k === cc ? " selected" : ""}>${c.flag} ${c.name}</option>`).join("");
+    const schoolRegs = Object.entries(C[cc].regions.school).filter(([k]) => !(cc === "FR" && "ABC".includes(k)));
+    const regOpts = (cc === "DE" ? schoolRegs : regs).map(([k, n]) => `<option value="${k}"${k === calState.r ? " selected" : ""}>${n}</option>`).join("");
+    $("#tab-calendrier").innerHTML = `
+      <div class="ycontrols">
+        <button class="btn" id="cprev" ${ALMANACH.years.includes(y - 1) ? "" : "disabled"}>◀</button><strong style="font-size:1.2rem">${y}</strong><button class="btn" id="cnext" ${ALMANACH.years.includes(y + 1) ? "" : "disabled"}>▶</button>
+        <button class="btn${calState.half === 1 ? " primary" : ""}" data-half="1">Janv → Juin</button><button class="btn${calState.half === 2 ? " primary" : ""}" data-half="2">Juil → Déc</button>
+        <select id="cc" aria-label="Pays">${countryOpts}</select>
+        ${regOpts ? `<select id="cr" aria-label="Région"><option value="">${cc === "DE" ? "Choisir un Land" : "National"}</option>${regOpts}</select>` : ""}
+      </div>
+      <div class="cal-wrap"><div class="cal">${months.map(monthHtml).join("")}</div></div>
+      <div class="cal-legend">
+        <span><i style="background:var(--phbg)"></i>Jour férié</span><span><i style="background:var(--sat)"></i>Samedi</span><span><i style="background:var(--sun)"></i>Dimanche</span>
+        ${cc === "FR"
+          ? ["A", "B", "C"].map((z) => `<label class="zt"><input type="checkbox" data-zone="${z}"${calState.zones.includes(z) ? " checked" : ""}><i class="zb-${z}"></i>Zone ${z}${z === myZone() ? ` <span class="star">★ ${myAcademy}</span>` : ""}</label>`).join("") + `<button class="btn" id="zsync" title="N'afficher que les zones présentes dans « Lignes affichées »">↺ Comme mes lignes</button><button class="btn" id="zall">Toutes</button>`
+          : calState.r ? `<label class="zt"><input type="checkbox" data-zone="S"${calState.other ? " checked" : ""}><i style="background:#7e57c2"></i>Vacances scolaires (${regionNames(cc)[calState.r]})</label>`
+          : C[cc].school.length ? `<span class="hint">Choisissez un Land pour voir les vacances scolaires.</span>` : `<span class="hint">${C[cc].schoolNote}</span>`}
+        <span class="hint">Chiffres à droite : numéro de semaine ISO.</span>
+      </div>`;
+    const save = () => { store.set("cal", calState); renderCalendrier(); };
+    $("#cprev").addEventListener("click", () => setYear(y - 1));
+    $("#cnext").addEventListener("click", () => setYear(y + 1));
+    $$("#tab-calendrier [data-half]").forEach((b) => b.addEventListener("click", () => { calState.half = +b.dataset.half; save(); }));
+    $("#cc").addEventListener("change", (e) => { calState.c = e.target.value; calState.r = ""; save(); });
+    $$("#tab-calendrier [data-zone]").forEach((cb) => cb.addEventListener("change", () => {
+      if (cb.dataset.zone === "S") calState.other = cb.checked;
+      else calState.zones = ["A", "B", "C"].filter((z) => (z === cb.dataset.zone ? cb.checked : calState.zones.includes(z)));
+      save();
+    }));
+    const zs = $("#zsync"); if (zs) zs.addEventListener("click", () => {
+      const fromRows = ["A", "B", "C"].filter((z) => rows.some((x) => x.c === "FR" && x.r === z));
+      calState.zones = fromRows.length ? fromRows : ["A", "B", "C"]; save();
+    });
+    const za = $("#zall"); if (za) za.addEventListener("click", () => { calState.zones = ["A", "B", "C"]; save(); });
+    const cr = $("#cr"); if (cr) cr.addEventListener("change", (e) => { calState.r = e.target.value; save(); });
+  }
 
   // ---------- liste ----------
   let listMonth = "", listKind = "all";
@@ -211,7 +295,7 @@
   }
   $$(".tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
-  function renderAll() { renderRows(); renderBientot(); renderAnnee(); renderListe(); }
+  function renderAll() { renderMine(); renderRows(); renderBientot(); renderAnnee(); renderCalendrier(); renderListe(); }
   renderAll();
   renderFoot();
   const tab = location.hash.slice(1) || store.get("tab", "bientot");

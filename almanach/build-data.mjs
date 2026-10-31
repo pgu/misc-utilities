@@ -157,6 +157,16 @@ async function schoolDE() {
 }
 const SCHOOL = { FR: schoolFR, DE: schoolDE };
 
+// Académies par zone (pour le rappel « quelle zone ? »).
+async function academiesFR() {
+  const where = `(zones="Zone A" or zones="Zone B" or zones="Zone C") and annee_scolaire="${Y}-${Y + 1}"`;
+  const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?select=zones,location&group_by=zones,location&where=${encodeURIComponent(where)}&order_by=location&limit=100`;
+  const out = { A: [], B: [], C: [] };
+  (await getJson(url)).results.forEach((r) => out[r.zones.replace("Zone ", "")]?.push(r.location));
+  if (Object.values(out).some((l) => !l.length)) throw new Error("liste d'académies incomplète");
+  return out;
+}
+
 // ---------- assemblage ----------
 const countries = {};
 for (const [cc, meta] of Object.entries(COUNTRIES)) {
@@ -172,10 +182,16 @@ for (const [cc, meta] of Object.entries(COUNTRIES)) {
     catch (e) { errors.push({ scope: `${cc} vacances scolaires`, message: e.message, reused: true }); school = reuse(cc, "school"); }
   }
   const regions = REGIONS[cc];
+  let academies;
+  if (cc === "FR") {
+    try { academies = await academiesFR(); }
+    catch (e) { errors.push({ scope: "FR académies", message: e.message, reused: true }); academies = prev?.countries?.FR?.academies; }
+  }
   countries[cc] = {
     ...meta,
     regions: { public: { ...(regions.both || {}), ...(regions.public || {}) }, school: { ...(regions.both || {}), ...(regions.school || {}) } },
     schoolNote,
+    ...(academies ? { academies } : {}),
     public: pub.sort(byDate),
     school,
   };

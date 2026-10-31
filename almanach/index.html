@@ -18,13 +18,16 @@
   <nav class="tabs" role="tablist" aria-label="Vues">
     <button role="tab" data-tab="bientot" aria-selected="true">⏭️ Bientôt</button>
     <button role="tab" data-tab="annee" aria-selected="false">📊 Année</button>
+    <button role="tab" data-tab="calendrier" aria-selected="false">🗓️ Calendrier</button>
     <button role="tab" data-tab="liste" aria-selected="false">📋 Liste</button>
   </nav>
 
   <main>
+    <section class="card" id="mine" aria-label="Mon académie"></section>
     <section class="card" id="rows" aria-label="Lignes affichées"></section>
     <section id="tab-bientot" class="panel"></section>
     <section id="tab-annee" class="panel" hidden></section>
+    <section id="tab-calendrier" class="panel" hidden></section>
     <section id="tab-liste" class="panel" hidden></section>
   </main>
 
