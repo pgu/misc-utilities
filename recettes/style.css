@@ -2,7 +2,7 @@
   --bg:#faf5ec; --card:#fff; --text:#2b2620; --muted:#6f685c; --line:#e3dac7;
   --accent:#c2571a; --accent-soft:#fbe6d6; --ok:#2f7d4a; --ok-soft:#dff0e4; --warn:#b8860b;
   --c-farine:#d9a441; --c-sarrasin:#8a5a44; --c-mais:#e8c53a; --c-aucune:#7b8fa3;
-  --radius:12px;
+  --radius:12px; --o1:#c2571a; --o2:#2a7fb8; --o3:#2f7d4a; --o4:#8e44ad; --o5:#c9a000;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg:#1d1b17; --card:#292620; --text:#efe9dc; --muted:#a79f8f; --line:#413c31; --accent:#f08a4b; --accent-soft:#41301f; --ok:#6cc38a; --ok-soft:#22372a; --warn:#e0b44a; }
@@ -91,3 +91,21 @@ table.cmp td.d { color:var(--muted); font-size:.85rem; }
 .pair .b.b2 { background:var(--c-aucune); }
 .diffnote { background:var(--accent-soft); border-left:4px solid var(--accent); padding:.6rem 1rem; border-radius:0 var(--radius) var(--radius) 0; margin-bottom:1rem; }
 footer { max-width:1100px; margin:0 auto; padding:1rem 16px 2rem; color:var(--muted); font-size:.85rem; }
+
+/* radar */
+.radar-wrap { display:grid; gap:1rem; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); align-items:start; }
+@media (max-width:820px) { .radar-wrap { grid-template-columns:1fr; } }
+svg.radar { width:100%; height:auto; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); }
+svg.radar .ring { fill:none; stroke:var(--line); }
+svg.radar .axis { stroke:var(--line); }
+svg.radar text { fill:var(--muted); font-size:11px; }
+svg.radar text.ax { fill:var(--text); font-size:12.5px; font-weight:600; }
+svg.radar polygon { fill-opacity:.18; stroke-width:2.2; stroke-linejoin:round; }
+.chip.o { border-width:2px; }
+.minis { display:grid; gap:.5rem; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); }
+.mini { font:inherit; color:inherit; text-align:center; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:.3rem .2rem; cursor:pointer; font-size:.78rem; }
+.mini:hover { border-color:var(--accent); }
+.mini.on { border-width:2px; border-color:var(--accent); background:var(--accent-soft); }
+.mini svg { width:100%; height:auto; display:block; }
+.mini polygon { stroke-width:1.5; fill-opacity:.35; }
+.mini .ring, .mini .axis { fill:none; stroke:var(--line); }

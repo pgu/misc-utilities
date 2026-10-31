@@ -312,6 +312,91 @@
     $("#swap").addEventListener("click", () => { [cmpA, cmpB] = [cmpB, cmpA]; renderComparer(); });
   }
 
+  // ---------- radar ----------
+  // Chaque axe = part de la masse totale de la recette. Facteurs de conversion en grammes.
+  const ALL_AXES = [
+    { id: "farine", label: "Farines", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
+    { id: "liquide", label: "Liquides", parts: { lait: 1.03, eau: 1, yaourt: 125 } },
+    { id: "oeufs", label: "Œufs", parts: { oeufs: 55 } },
+    { id: "gras", label: "Matières grasses", parts: { beurre: 1, huile: 0.92 } },
+    { id: "sucre", label: "Sucres", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
+    { id: "garniture", label: "Garnitures salées", parts: { chorizo: 1, gruyere: 1 } },
+  ];
+  const OTHER = { levure: 10, sel: 0.3 }; // comptés dans la masse totale, sans axe
+  // Deux modes : « total » (toute la masse) ou « sec » (sans les liquides, pour comparer les pâtes indépendamment de leur hydratation).
+  let radarMode = store.get("radarMode", "total");
+  let AXES = ALL_AXES;
+  function shares(r) {
+    const mass = AXES.map((ax) => Object.entries(ax.parts).reduce((s, [k, f]) => s + (r.ing[k] || 0) * f, 0));
+    const tot = mass.reduce((s, v) => s + v, 0) + Object.entries(OTHER).reduce((s, [k, f]) => s + (r.ing[k] || 0) * f, 0);
+    return mass.map((m) => (tot ? m / tot : 0));
+  }
+  let SHARES = REC.map(shares);
+  let RMAX = 0.8; // échelle racine carrée : les petites parts restent lisibles
+  const rad = (v, R) => Math.sqrt(Math.min(v, RMAX) / RMAX) * R;
+  const pt = (i, v, R) => { const a = -Math.PI / 2 + (i / AXES.length) * Math.PI * 2; return [Math.cos(a) * rad(v, R), Math.sin(a) * rad(v, R)]; };
+  const poly = (sh, R) => sh.map((v, i) => pt(i, v, R).map((x) => x.toFixed(1)).join(",")).join(" ");
+  const grid = (R, rings) => rings.map((v) => `<polygon class="ring" points="${AXES.map((_, i) => pt(i, v, R).join(",")).join(" ")}" style="fill:none;stroke-width:1"/>`).join("")
+    + AXES.map((_, i) => { const [x, y] = pt(i, RMAX, R); return `<line class="axis" x1="0" y1="0" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; }).join("");
+
+  let radarSel = store.get("radar", ["crepes", "gaufres", "pate-brisee"]).filter((id) => rec(id));
+
+  function setRadarMode() {
+    AXES = radarMode === "total" ? ALL_AXES : ALL_AXES.filter((ax) => ax.id !== "liquide");
+    RMAX = radarMode === "total" ? 0.8 : 1;
+    SHARES = REC.map(shares);
+  }
+  setRadarMode();
+
+  function renderRadar() {
+    const R = 150, rings = radarMode === "total" ? [0.1, 0.25, 0.5, 0.8] : [0.1, 0.25, 0.5, 1];
+    const sel = radarSel.map((id, k) => ({ r: rec(id), k }));
+    const labels = AXES.map((ax, i) => {
+      const a = -Math.PI / 2 + (i / AXES.length) * Math.PI * 2, x = Math.cos(a) * (R + 14), y = Math.sin(a) * (R + 14);
+      const anchor = Math.abs(Math.cos(a)) < 0.2 ? "middle" : Math.cos(a) > 0 ? "start" : "end";
+      return `<text class="ax" x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="${anchor}">${ax.label}</text>`;
+    }).join("");
+    const ringLabels = rings.map((v) => { const t = -Math.PI / 2 + Math.PI / AXES.length, d = rad(v, R); return `<text x="${(Math.cos(t) * d + 3).toFixed(1)}" y="${(Math.sin(t) * d - 2).toFixed(1)}">${Math.round(v * 100)} %</text>`; }).join("");
+    const ordered = orderedRecipes();
+
+    $("#tab-radar").innerHTML = `
+      <div class="ctl" role="group" aria-label="Mode de calcul">
+        <button class="chip" data-mode="total" aria-pressed="${radarMode === "total"}">Masse totale</button>
+        <button class="chip" data-mode="sec" aria-pressed="${radarMode === "sec"}">Hors liquides</button>
+        <span class="hint" style="margin:0">${radarMode === "total" ? "Part de chaque ingrédient dans toute la pâte." : "Les liquides (lait, eau, yaourt) sont retirés : on compare la composition de la pâte, quelle que soit sa fluidité."}</span>
+      </div>
+      <p class="hint">Chaque recette est un polygone : plus un sommet est loin du centre, plus l'ingrédient pèse dans la masse (échelle racine carrée, pour voir aussi les petites parts). Sélectionnez jusqu'à 5 recettes à superposer.</p>
+      <div class="radar-wrap">
+        <div>
+          <svg class="radar" viewBox="-270 -200 540 400" role="img" aria-label="Radar des proportions d'ingrédients">
+            ${grid(R, rings)}${ringLabels}
+            ${sel.map(({ r, k }) => `<polygon points="${poly(SHARES[idx(r)], R)}" style="stroke:var(--o${k + 1});fill:var(--o${k + 1})"/>`).join("")}
+            ${labels}
+          </svg>
+          <div class="chips" style="margin-top:.6rem">${sel.map(({ r, k }) => `<button class="chip o" data-r="${r.id}" style="border-color:var(--o${k + 1})"><span style="color:var(--o${k + 1})">●</span> ${r.nom} ✕</button>`).join("") || `<span class="hint">Aucune recette sélectionnée.</span>`}</div>
+          ${sel.length ? `<div class="card" style="overflow-x:auto"><table class="cmp"><thead><tr><th>Part de la masse</th>${sel.map(({ r, k }) => `<th style="color:var(--o${k + 1})">${r.nom}</th>`).join("")}</tr></thead><tbody>
+            ${AXES.map((ax, i) => `<tr><td>${ax.label}</td>${sel.map(({ r }) => { const v = SHARES[idx(r)][i]; return `<td>${v ? Math.round(v * 100) + " %" : "—"}</td>`; }).join("")}</tr>`).join("")}
+          </tbody></table><p class="hint" style="margin-bottom:0">Levure et sel entrent dans la masse mais n'ont pas d'axe.</p></div>` : ""}
+        </div>
+        <div>
+          <h3>Toutes les recettes</h3>
+          <p class="hint">La forme résume le type de pâte. Touchez pour ajouter ou retirer du radar.</p>
+          <div class="minis">${ordered.map((r) => `<button class="mini${radarSel.includes(r.id) ? " on" : ""}" data-r="${r.id}">
+            <svg viewBox="-62 -62 124 124" aria-hidden="true">${grid(50, [0.25, RMAX])}<polygon points="${poly(SHARES[idx(r)], 50)}" style="stroke:var(--c-${mainFlour(r)});fill:var(--c-${mainFlour(r)})"/></svg>${r.nom}</button>`).join("")}</div>
+        </div>
+      </div>`;
+    $$("#tab-radar [data-mode]").forEach((b) => b.addEventListener("click", () => {
+      radarMode = b.dataset.mode; store.set("radarMode", radarMode); setRadarMode(); renderRadar();
+    }));
+    $$("#tab-radar [data-r]").forEach((el) => el.addEventListener("click", () => {
+      const id = el.dataset.r;
+      if (radarSel.includes(id)) radarSel = radarSel.filter((x) => x !== id);
+      else radarSel = [...radarSel, id].slice(-5);
+      store.set("radar", radarSel);
+      renderRadar();
+    }));
+  }
+
   // ---------- onglets ----------
   function showTab(name) {
     $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
@@ -324,6 +409,7 @@
   renderPlacard();
   renderMatrice();
   renderComparer();
+  renderRadar();
   const tab = location.hash.slice(1) || store.get("tab", "placard");
   showTab($(`.tabs [data-tab="${tab}"]`) ? tab : "placard");
 })();
