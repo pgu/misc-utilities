@@ -79,7 +79,9 @@
       </div>
       <div class="why"><strong>💡 Pourquoi ?</strong>${t.pourquoi}</div>
       <h3 style="margin-top:1.2rem">Au potager en ${MOIS[month - 1].toLowerCase()}</h3>
-      <div class="grid">${list("s", "À semer")}${list("p", "À planter / repiquer")}${list("r", "À récolter")}</div>`;
+      <div class="grid">${list("s", "À semer")}${list("p", "À planter / repiquer")}${list("r", "À récolter")}</div>
+      <h3 style="margin-top:1.2rem">📍 À Nantes</h3>
+      <div class="grid">${NANTES.map((n) => `<div class="card"><strong>${n.titre}</strong><p style="margin:.3rem 0 0">${n.txt}</p></div>`).join("")}</div>`;
     $$("#tab-mois [data-month]").forEach((b) => b.addEventListener("click", () => renderMois(+b.dataset.month)));
   }
 

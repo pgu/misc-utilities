@@ -1,4 +1,4 @@
-// Données du potager — climat tempéré (France métropolitaine, hors montagne et pourtour méditerranéen).
+// Données du potager — adaptées au climat océanique de Nantes (hivers doux, gelées rares, étés tempérés, sols souvent sableux ou limoneux).
 // Mois : 1 = janvier … 12 = décembre.
 
 const MOIS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -36,7 +36,7 @@ const GROUPES = [
 const LEGUMES = [
   {
     id: "pois", nom: "Pois", emoji: "🟢", groupe: "legumineuses", famille: "Fabacées",
-    s: [2, 3, 4, 10, 11], p: [], r: [5, 6, 7],
+    s: [1, 2, 3, 4, 10, 11], p: [], r: [5, 6, 7],
     soleil: "Soleil", espace: "5 cm sur la ligne, lignes à 30 cm", duree: "3 à 4 mois",
     conseil: "En automne, choisir une variété rustique d'hiver (ex. 'Douce Provence'). Poser un grillage ou des branches pour le tuteurage. Après la récolte, couper à ras et laisser les racines en terre : l'azote reste dans le sol.",
     amis: "Carotte, radis, laitue", ennemis: "Ail, oignon, poireau",
@@ -50,7 +50,7 @@ const LEGUMES = [
   },
   {
     id: "feve", nom: "Fève", emoji: "🌱", groupe: "legumineuses", famille: "Fabacées",
-    s: [10, 11, 2, 3], p: [], r: [5, 6],
+    s: [10, 11, 12, 2, 3], p: [], r: [5, 6],
     soleil: "Soleil", espace: "20 cm sur la ligne, lignes à 40 cm", duree: "6 à 7 mois (semis d'automne)",
     conseil: "Le semis d'automne (octobre–novembre) donne des plantes robustes et une récolte dès mai. Pincer le sommet à la floraison pour limiter les pucerons noirs. Excellent engrais vert si on la coupe avant les gousses.",
     amis: "Pomme de terre, carotte, céleri", ennemis: "Ail, oignon",
@@ -64,23 +64,23 @@ const LEGUMES = [
   },
   {
     id: "laitue", nom: "Laitue et salades", emoji: "🥗", groupe: "feuilles", famille: "Astéracées",
-    s: [3, 4, 5, 6, 7, 8, 9], p: [4, 5, 6, 7, 8, 9, 10], r: [5, 6, 7, 8, 9, 10, 11],
+    s: [2, 3, 4, 5, 6, 7, 8, 9], p: [3, 4, 5, 6, 7, 8, 9, 10], r: [4, 5, 6, 7, 8, 9, 10, 11],
     soleil: "Mi-ombre en été", espace: "25–30 cm", duree: "6 à 10 semaines",
     conseil: "Semer en petite quantité toutes les 2–3 semaines pour étaler la récolte. En été, préférer les variétés résistantes à la chaleur et arroser le soir. En automne, les batavias et feuilles de chêne tiennent le mieux.",
     amis: "Carotte, radis, fraisier", ennemis: "Persil, céleri",
   },
   {
     id: "epinard", nom: "Épinard", emoji: "🍃", groupe: "feuilles", famille: "Amaranthacées",
-    s: [3, 4, 8, 9, 10], p: [], r: [5, 6, 10, 11, 12, 1, 2],
+    s: [2, 3, 4, 8, 9, 10, 11], p: [], r: [4, 5, 6, 10, 11, 12, 1, 2],
     soleil: "Mi-ombre", espace: "10 cm, lignes à 25 cm", duree: "6 à 8 semaines",
     conseil: "Légume de saison fraîche : monte en graines dès que les jours rallongent. Le semis d'août–septembre donne des feuilles tendres tout l'hiver sous un voile.",
     amis: "Fraisier, chou", ennemis: "—",
   },
   {
     id: "mache", nom: "Mâche", emoji: "🌿", groupe: "feuilles", famille: "Valérianacées",
-    s: [8, 9, 10], p: [], r: [10, 11, 12, 1, 2, 3],
+    s: [8, 9, 10, 11], p: [], r: [10, 11, 12, 1, 2, 3],
     soleil: "Soleil / mi-ombre", espace: "Semis dense, lignes à 15 cm", duree: "2 à 3 mois",
-    conseil: "Ultra rustique, parfaite pour un premier hiver : semer à la volée, tasser au dos du râteau, arroser. Peut tenir en terre sous la neige. Se resème seule si on laisse monter quelques pieds.",
+    conseil: "Ultra rustique, parfaite pour un premier hiver : semer à la volée, tasser au dos du râteau, arroser. Peut tenir en terre sous la neige. Se resème seule si on laisse monter quelques pieds. À Nantes, la mâche nantaise (à grosses feuilles rondes) est la variété de référence.",
     amis: "Poireau, fraisier", ennemis: "—",
   },
   {
@@ -94,7 +94,7 @@ const LEGUMES = [
     id: "tomate", nom: "Tomate", emoji: "🍅", groupe: "fruits", famille: "Solanacées",
     s: [3, 4], p: [5, 6], r: [7, 8, 9, 10],
     soleil: "Plein soleil", espace: "60 cm, lignes à 80 cm", duree: "5 à 6 mois",
-    conseil: "Semer sous abri chaud en mars, repiquer après les Saints de glace (mi-mai). Tuteurer, supprimer les gourmands, pailler épais. Ne jamais mouiller le feuillage (mildiou). Éviter de replanter des solanacées au même endroit pendant 3–4 ans.",
+    conseil: "Semer sous abri chaud en mars, repiquer début mai avec protection (cloche, voile), ou après les Saints de glace (mi-mai) pour être tranquille. Tuteurer, supprimer les gourmands, pailler épais. Ne jamais mouiller le feuillage (mildiou). Éviter de replanter des solanacées au même endroit pendant 3–4 ans.",
     amis: "Basilic, œillet d'Inde, carotte", ennemis: "Chou, fenouil, pomme de terre",
   },
   {
@@ -113,9 +113,9 @@ const LEGUMES = [
   },
   {
     id: "carotte", nom: "Carotte", emoji: "🥕", groupe: "racines", famille: "Apiacées",
-    s: [3, 4, 5, 6, 7], p: [], r: [6, 7, 8, 9, 10, 11, 12],
+    s: [2, 3, 4, 5, 6, 7], p: [], r: [5, 6, 7, 8, 9, 10, 11, 12],
     soleil: "Soleil", espace: "3 cm après éclaircissage, lignes à 20 cm", duree: "3 à 5 mois",
-    conseil: "Sol fin, meuble, sans cailloux ni fumier frais. La germination est lente (2–3 semaines) : garder la terre humide, couvrir d'un voile. Éclaircir tôt ; l'odeur attire la mouche de la carotte, donc voile anti-insectes.",
+    conseil: "Sol fin, meuble, sans cailloux ni fumier frais. La carotte de Nantes (cylindrique, sucrée, sans cœur) vient d'ici et se plaît en sol sableux. La germination est lente (2–3 semaines) : garder la terre humide, couvrir d'un voile. Éclaircir tôt ; l'odeur attire la mouche de la carotte, donc voile anti-insectes.",
     amis: "Poireau, oignon, radis", ennemis: "Aneth",
   },
   {
@@ -126,22 +126,29 @@ const LEGUMES = [
     amis: "Chou, oignon, laitue", ennemis: "Haricot grimpant",
   },
   {
+    id: "navet", nom: "Navet", emoji: "⚪", groupe: "racines", famille: "Brassicacées",
+    s: [3, 4, 8, 9], p: [], r: [5, 6, 10, 11, 12],
+    soleil: "Mi-ombre", espace: "10 cm, lignes à 25 cm", duree: "6 à 10 semaines",
+    conseil: "Sol frais et régulièrement arrosé, sinon la racine devient filandreuse. Le navet nantais (boule d'or) se sème surtout en août–septembre pour une récolte d'octobre à décembre. Voile anti-altises (petits coléoptères qui criblent les feuilles).",
+    amis: "Pois, laitue", ennemis: "Autres brassicacées en rotation rapprochée",
+  },
+  {
     id: "ail", nom: "Ail, échalote, oignon", emoji: "🧄", groupe: "racines", famille: "Amaryllidacées",
-    s: [], p: [10, 11, 2, 3], r: [6, 7, 8],
+    s: [], p: [10, 11, 12, 2, 3], r: [6, 7, 8],
     soleil: "Soleil", espace: "10–15 cm, lignes à 25 cm", duree: "7 à 9 mois (plantation d'automne)",
     conseil: "À planter maintenant ! Caïeux de 2–3 cm de profondeur, pointe vers le haut, à planter dans un sol non fumé et bien drainé. L'ail d'automne passe l'hiver au froid, ce qui le fait former sa tête. Récolte quand les feuilles jaunissent (juin–juillet), puis séchage 2–3 semaines.",
     amis: "Carotte, fraisier, tomate", ennemis: "Pois, haricot, fève",
   },
   {
     id: "radis", nom: "Radis", emoji: "🔴", groupe: "racines", famille: "Brassicacées",
-    s: [3, 4, 5, 6, 7, 8, 9], p: [], r: [4, 5, 6, 7, 8, 9, 10],
+    s: [2, 3, 4, 5, 6, 7, 8, 9], p: [], r: [4, 5, 6, 7, 8, 9, 10],
     soleil: "Mi-ombre", espace: "3 cm, lignes à 15 cm", duree: "3 à 5 semaines",
     conseil: "Le plus rapide du potager : idéal pour apprendre ou pour occuper un coin libre. Semer entre les carottes (levée rapide, il marque la ligne). Arroser régulièrement sinon il devient piquant et creux.",
     amis: "Carotte, laitue, pois", ennemis: "—",
   },
   {
     id: "pdt", nom: "Pomme de terre", emoji: "🥔", groupe: "racines", famille: "Solanacées",
-    s: [], p: [3, 4, 5], r: [6, 7, 8, 9],
+    s: [], p: [2, 3, 4, 5], r: [5, 6, 7, 8, 9],
     soleil: "Soleil", espace: "35 cm, lignes à 70 cm", duree: "3 à 5 mois",
     conseil: "Gourmande en place : sur 100 m² elle occupe beaucoup. Pré-germer les plants en février, butter deux fois. Utile pour nettoyer un sol de gazon en première année (la terre est ameublie).",
     amis: "Fève, chou, œillet d'Inde", ennemis: "Tomate, courge",
@@ -186,7 +193,7 @@ const TACHES = [
     taches: [
       "Semer sous abri : poivrons, aubergines, céleri, premiers poireaux.",
       "Pré-germer les pommes de terre à la lumière.",
-      "Semer pois et fèves si le sol est ressuyé.",
+      "Semer pois, fèves, carottes primeurs sous voile si le sol est ressuyé.",
       "Passer le compost : c'est le moment de le tamiser s'il est mûr.",
     ],
     pourquoi: "Les semis précoces sous abri gagnent 4 à 6 semaines : tomate et poivron ont besoin d'une longue saison pour mûrir avant l'automne.",
@@ -214,7 +221,7 @@ const TACHES = [
   {
     saison: "Printemps", titre: "Plantation des légumes-fruits",
     taches: [
-      "Après le 15 mai (Saints de glace) : planter tomates, poivrons, courgettes, courges.",
+      "Début mai sous protection, ou après le 15 mai : planter tomates, poivrons, courgettes, courges.",
       "Semer haricots dès que le sol atteint 12 °C.",
       "Pailler tout le sol nu : conserve l'eau, étouffe les herbes.",
       "Récolter radis, laitues, épinards, premières fèves.",
@@ -338,10 +345,10 @@ const QUIZ = [
     expl: "Une terre tassée manque d'air et d'eau, les racines peinent à descendre. Des planches de 1,20 m se travaillent depuis les sentiers.",
   },
   {
-    q: "Quand repiquer tomates et poivrons dehors (climat tempéré) ?",
-    options: ["Dès mars", "Après le 15 mai", "En août"],
+    q: "Quand repiquer tomates et poivrons dehors à Nantes ?",
+    options: ["Dès mars", "Début à mi-mai, une fois le risque de gelée passé", "En août"],
     bonne: 1,
-    expl: "Les Saints de glace (11–13 mai) marquent la fin du risque de gel tardif. Une nuit à 0 °C suffit à détruire des plants de tomate.",
+    expl: "Les Saints de glace (11–13 mai) marquent traditionnellement la fin du risque de gel tardif ; sur la côte atlantique, il est faible dès début mai. Une nuit à 0 °C suffit à détruire des plants de tomate. À Nantes le risque est faible dès début mai, mais la douceur humide favorise le mildiou.",
   },
   {
     q: "Pourquoi tourner les cultures d'une année sur l'autre ?",
@@ -349,4 +356,15 @@ const QUIZ = [
     bonne: 0,
     expl: "Chaque famille a ses propres maladies (mildiou pour les solanacées, hernie pour les choux) qui restent dans le sol. La rotation les prive de leur hôte et alterne gourmands et peu exigeants.",
   },
+];
+
+// Spécificités locales (Nantes et région : climat océanique, hivers doux, vent d'ouest, pluie fréquente).
+const NANTES = [
+  { titre: "Hivers doux", txt: "Gelées rares et courtes : kale, poireaux, mâche, épinards, fèves passent l'hiver sans voile dans la plupart des cas. Semis d'automne possibles jusqu'à fin novembre." },
+  { titre: "Printemps précoce", txt: "Les semis de pleine terre démarrent 1 à 2 semaines plus tôt qu'à l'est : carottes, pois, laitues, pommes de terre primeurs dès février–mars sous voile." },
+  { titre: "Humidité et mildiou", txt: "Tomates, pommes de terre et courges souffrent du mildiou après les périodes pluvieuses : arroser au pied seulement, espacer, aérer, choisir des variétés tolérantes, et envisager un abri pour les tomates." },
+  { titre: "Limaces et escargots", txt: "Très actifs toute l'année. Ramassage le soir, pas de grosse couche de paille collée aux jeunes plants, barrières de cendre ou de coquilles, canards ou hérissons bienvenus." },
+  { titre: "Sol parfois sableux", txt: "Près de la Loire et du littoral, les sols filtrent vite : paillage épais, compost généreux et arrosage rare mais abondant en juillet–août." },
+  { titre: "Vent d'ouest", txt: "Tuteurs solides pour tomates et haricots grimpants ; haie ou brise-vent côté ouest si le terrain est exposé." },
+  { titre: "Variétés locales", txt: "Mâche nantaise, carotte de Nantes, navet boule d'or, poireau de Nantes : très bien adaptées au terroir." },
 ];
