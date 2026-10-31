@@ -146,6 +146,14 @@ const DONNEES = {
    "en": "chorizo"
   },
   {
+   "id": "lardons",
+   "nom": "Lardons",
+   "unite": "g",
+   "note": "",
+   "cat": "garniture",
+   "en": "bacon lardons"
+  },
+  {
    "id": "gruyere",
    "nom": "Gruyère",
    "unite": "g",
@@ -758,6 +766,61 @@ const DONNEES = {
    },
    "meta": {},
    "en": "Hollandaise sauce"
+  },
+  {
+   "id": "quiche-lorraine",
+   "nom": "Quiche lorraine",
+   "ing": {
+    "farine": 250,
+    "oeufs": 3,
+    "eau": 50,
+    "lait": 100,
+    "creme_fraiche": 200,
+    "beurre": 125,
+    "sel": 6,
+    "lardons": 150,
+    "gruyere": 100,
+    "muscade": 1
+   },
+   "meta": {
+    "four": 180,
+    "cuisson": 35
+   },
+   "en": "Quiche Lorraine"
+  },
+  {
+   "id": "kugelhopf",
+   "nom": "Kugelhopf",
+   "ing": {
+    "farine": 500,
+    "oeufs": 2,
+    "lait": 150,
+    "beurre": 150,
+    "levure_de_boulanger": 1,
+    "sel": 5,
+    "sucre": 80,
+    "fruits": 100
+   },
+   "meta": {
+    "temp": "tiède",
+    "four": 180,
+    "cuisson": 40
+   },
+   "en": "Kugelhopf (Alsatian brioche)"
+  },
+  {
+   "id": "sauce-a-la-creme",
+   "nom": "Sauce à la crème",
+   "ing": {
+    "farine": 30,
+    "lait": 250,
+    "creme_fraiche": 150,
+    "beurre": 30,
+    "sel": 3,
+    "muscade": 1
+   },
+   "meta": {},
+   "en": "Cream sauce"
   }
  ]
 };

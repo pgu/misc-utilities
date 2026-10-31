@@ -328,7 +328,7 @@
     { id: "oeufs", nom: "Œufs", en: "Eggs", parts: { oeufs: 55 } },
     { id: "gras", nom: "Matières grasses", en: "Fats", parts: { beurre: 1, huile: 0.92 } },
     { id: "sucre", nom: "Sucres", en: "Sugars", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
-    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, gruyere: 1, fruits: 1 } },
+    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, lardons: 1, gruyere: 1, fruits: 1 } },
   ];
   const OTHER = { levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
   // Deux modes : « total » (toute la masse) ou « sec » (sans les liquides, pour comparer les pâtes indépendamment de leur hydratation).
