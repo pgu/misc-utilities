@@ -282,7 +282,8 @@
     const diffq = common.filter((i) => A.ing[i.id] !== B.ing[i.id]).map((i) => nm(i));
     const s = Math.round(SIM[idx(A)][idx(B)] * 100);
     const rA = ratios(A), rB = ratios(B);
-    const opts = (cur) => REC.map((r) => `<option value="${r.id}"${r.id === cur ? " selected" : ""}>${nt(r)}</option>`).join("");
+    const byName = [...REC].sort((x, y) => nt(x).localeCompare(nt(y), lang === "en" ? "en" : "fr")); // tri sur le nom affiché
+    const opts = (cur) => byName.map((r) => `<option value="${r.id}"${r.id === cur ? " selected" : ""}>${nt(r)}</option>`).join("");
     const metaRow = (label, k, unit) => (A.meta[k] !== undefined || B.meta[k] !== undefined) ? `<tr><td>${label}</td><td>${A.meta[k] !== undefined ? A.meta[k] + unit : "—"}</td><td>${B.meta[k] !== undefined ? B.meta[k] + unit : "—"}</td><td class="d"></td></tr>` : "";
     const barMax = (id) => Math.max(A.ing[id] || 0, B.ing[id] || 0) || 1;
 
