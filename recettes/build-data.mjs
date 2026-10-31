@@ -31,9 +31,13 @@ const recettes = header.slice(1).map((h) => ({ id: slug(clean(h)), nom: clean(h)
 
 const META = { "Température": "temp", "Four": "four", "Cuisson": "cuisson" };
 // Catégorie et unité par défaut quand le CSV ne les précise pas.
-const CAT = { farine: "farine", sarrasin: "farine", mais: "farine", avoine: "farine", yaourt: "liquide", oeufs: "base", eau: "liquide", lait: "liquide", beurre: "gras", huile: "gras", levure: "levant", sel: "assaisonnement", sucre: "sucre", sucre_vanille: "sucre", chocolat: "sucre", chorizo: "garniture", gruyere: "garniture" };
-const UNITE = { beurre: "g", yaourt: "pot", oeufs: "" };
+const CAT = { farine: "farine", sarrasin: "farine", mais: "farine", avoine: "farine", yaourt: "liquide", oeufs: "base", eau: "liquide", lait: "liquide", beurre: "gras", huile: "gras", levure_chimique: "levant", levure_de_boulanger: "levant", sel: "assaisonnement", moutarde: "assaisonnement", vinaigre_ou_citron: "assaisonnement", ail: "assaisonnement", muscade: "assaisonnement", sucre: "sucre", sucre_vanille: "sucre", chocolat: "sucre", chorizo: "garniture", gruyere: "garniture", fruits: "garniture" };
+const UNITE = { oeufs: "" };
 const ingredients = [];
+// Noms anglais, affichés via le sélecteur de langue de l'app.
+const EN_ING = { farine: "wheat flour", sarrasin: "buckwheat flour", mais: "corn flour (masa harina)", avoine: "oats", yaourt: "yogurt", oeufs: "eggs", eau: "water", lait: "milk", beurre: "butter", huile: "oil", levure_chimique: "baking powder", levure_de_boulanger: "yeast", sel: "salt", sucre: "sugar", sucre_vanille: "vanilla sugar", chocolat: "chocolate", chorizo: "chorizo", gruyere: "Gruyère cheese", fruits: "fruit", moutarde: "mustard", vinaigre_ou_citron: "vinegar or lemon", ail: "garlic", muscade: "nutmeg" };
+const EN_REC = { crepes: "Crêpes", pancakes: "Pancakes", "pancakes-avoine": "Oat pancakes", gaufres: "Waffles", donut: "Doughnut", churros: "Churros", bottereaux: "Bottereaux (Nantes fritters)", "gateau-yaourt": "Yogurt cake", "fondant-au-chocolat": "Chocolate fondant cake", "cake-sale-chorizo": "Savory loaf cake (chorizo)", "galettes-de-ble-noir": "Buckwheat galettes", "tortillas-de-mais": "Corn tortillas", empanadillas: "Empanadillas (empanada dough)", "sauce-bechamel": "Béchamel sauce", mayonnaise: "Mayonnaise", "pate-brisee": "Shortcrust pastry", "pate-feuilletee": "Puff pastry", "pate-a-pizza": "Pizza dough", "pate-a-choux": "Choux pastry", gougeres: "Gougères (cheese puffs)", "quatre-quarts": "Pound cake", madeleines: "Madeleines", "far-breton": "Far breton (Breton flan)", clafoutis: "Clafoutis", "yorkshire-pudding": "Yorkshire pudding", blinis: "Blinis", brioche: "Brioche", naan: "Naan", "tortillas-de-ble": "Flour tortillas", "pate-sablee": "Sweet shortcrust (pâte sablée)", "sauce-mornay": "Mornay (cheese) sauce", aioli: "Aïoli", hollandaise: "Hollandaise sauce" };
+
 
 for (const r of body) {
   const lines = r[0].split("\n").map((l) => l.trim()).filter(Boolean);
@@ -50,6 +54,9 @@ for (const r of body) {
   ingredients.push({ id: key, nom: nom.replace(/^Oeufs$/, "Œufs").replace(/^Gruyere$/, "Gruyère").replace(/^Farine (.*)$/, "Farine de $1").replace(/ Blé$/, " blé").replace(/ Sarrasin$/, " sarrasin").replace(/ Maïs$/, " maïs").replace(/de Blé/, "de blé").replace(/de Sarrasin/, "de sarrasin").replace(/de Maïs/, "de maïs"), unite: unite || UNITE[key] || "", note: lines.slice(1).join(" · "), cat: CAT[key] || "autre" });
   recettes.forEach((rec, i) => { const v = parseFloat((r[i + 1] || "").replace(",", ".")); if (!isNaN(v)) rec.ing[key] = v; });
 }
+
+ingredients.forEach((i) => { i.en = EN_ING[i.id] || (console.warn("EN manquant :", i.id), i.nom); });
+recettes.forEach((r) => { r.en = EN_REC[r.id] || (console.warn("EN manquant :", r.id), r.nom); });
 
 writeFileSync(join(root, "recettes", "data.js"),
   "// Généré par build-data.mjs à partir de resources/*.csv — ne pas éditer à la main.\n" +

@@ -11,7 +11,14 @@
 <body>
   <header class="top">
     <a class="back" href="../">← Mini-apps</a>
-    <h1>🥞 Recettes voisines</h1>
+    <div class="title-row">
+      <h1>🥞 Recettes voisines</h1>
+      <div id="lang" class="chips" role="group" aria-label="Langue des noms d'ingrédients et de recettes">
+        <button class="chip" data-lang="fr" aria-pressed="true">FR</button>
+        <button class="chip" data-lang="bi" aria-pressed="false">FR · EN</button>
+        <button class="chip" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
     <p class="lead">Quelles recettes se ressemblent, et quels ingrédients en débloquent une autre ?</p>
   </header>
 

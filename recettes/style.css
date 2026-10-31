@@ -109,3 +109,13 @@ svg.radar polygon { fill-opacity:.18; stroke-width:2.2; stroke-linejoin:round; }
 .mini svg { width:100%; height:auto; display:block; }
 .mini polygon { stroke-width:1.5; fill-opacity:.35; }
 .mini .ring, .mini .axis { fill:none; stroke:var(--line); }
+
+/* langue */
+.title-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+.title-row .chips { margin:0; }
+#lang .chip { padding:.2rem .6rem; font-size:.8rem; }
+#lang .chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+small.en { color:var(--muted); font-weight:400; font-size:.78em; }
+th small.en, .chip small.en { display:block; }
+.chip[aria-pressed="true"] small.en, .chip.o small.en { color:inherit; opacity:.8; }
+.pct { white-space:nowrap; }

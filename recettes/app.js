@@ -11,6 +11,14 @@
   const keys = (r) => Object.keys(r.ing);
   const qty = (id, q) => { const i = ing(id); return `${q}${i.unite ? " " + i.unite : ""}`; };
   const FARINES = ["farine", "sarrasin", "mais", "avoine"];
+  // Langue d'affichage des noms : fr | bi (français + anglais) | en
+  let lang = store0("lang", "fr");
+  function store0(k, d) { try { const v = localStorage.getItem("recettes:" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
+  const nt = (x) => { const fr = x.nom; return lang === "en" ? x.en : lang === "bi" && x.en !== fr ? `${fr} · ${x.en}` : fr; };           // texte brut (SVG, <option>)
+  const nm = (x) => { const fr = x.nom; return lang === "en" ? x.en : lang === "bi" && x.en !== fr ? `${fr} <small class="en">${x.en}</small>` : fr; }; // HTML
+  const tip = (i) => (lang === "fr" ? [i.en, i.note].filter(Boolean).join(" — ") : i.note || "");
+  const CAT_EN = { farine: "Flours", liquide: "Liquids", base: "Eggs", gras: "Fats", levant: "Leavening", assaisonnement: "Seasoning", sucre: "Sugar & chocolate", garniture: "Fillings", autre: "Other" };
+  const catObj = (c) => ({ nom: CAT_LABEL[c] || c, en: CAT_EN[c] || c });
   const CAT_LABEL = { farine: "Farines", liquide: "Liquides", base: "Œufs", gras: "Matières grasses", levant: "Levure", assaisonnement: "Assaisonnement", sucre: "Sucre et chocolat", garniture: "Garnitures", autre: "Autres" };
 
   const store = {
@@ -32,12 +40,12 @@
   const SIM = REC.map((a) => REC.map((b) => (a === b ? 1 : similarity(a, b))));
   const idx = (r) => REC.indexOf(r);
   const mainFlour = (r) => (r.ing.sarrasin ? "sarrasin" : r.ing.mais ? "mais" : r.ing.farine ? "farine" : "aucune");
-  const FLOUR_LABEL = { farine: "Farine de blé", sarrasin: "Sarrasin", mais: "Maïs", aucune: "Sans farine" };
+  const FLOUR_LABEL = { farine: { nom: "Farine de blé", en: "Wheat flour" }, sarrasin: { nom: "Sarrasin", en: "Buckwheat" }, mais: { nom: "Maïs", en: "Corn" }, aucune: { nom: "Sans farine", en: "No flour" } };
   const similarTo = (r) => REC.filter((o) => o !== r).map((o) => ({ r: o, s: SIM[idx(r)][idx(o)] })).sort((x, y) => y.s - x.s);
 
   // ---------- garde-manger ----------
-  const BASE = ["farine", "oeufs", "lait", "beurre", "sel", "sucre", "levure", "huile"];
-  let pantry = new Set(store.get("placard", BASE));
+  const BASE = ["farine", "oeufs", "lait", "beurre", "sel", "sucre", "levure_chimique", "huile"];
+  let pantry = new Set(store.get("placard", BASE).filter((id) => ing(id))); // ignore les anciens ids disparus
   const savePantry = () => store.set("placard", [...pantry]);
   const missing = (r) => keys(r).filter((k) => !pantry.has(k));
   const completion = (r) => (keys(r).length - missing(r).length) / keys(r).length;
@@ -71,11 +79,11 @@
             <div style="display:flex;gap:.4rem;flex-wrap:wrap">
               <button class="btn" data-preset="base">Base</button><button class="btn" data-preset="none">Vider</button><button class="btn" data-preset="all">Tout</button>
             </div>
-            ${cats.map((c) => `<h3 style="margin-top:.8rem">${CAT_LABEL[c] || c}</h3><div class="chips">${ING.filter((i) => i.cat === c).map((i) => `<button class="chip" data-ing="${i.id}" aria-pressed="${pantry.has(i.id)}">${i.nom}</button>`).join("")}</div>`).join("")}
+            ${cats.map((c) => `<h3 style="margin-top:.8rem">${nm(catObj(c))}</h3><div class="chips">${ING.filter((i) => i.cat === c).map((i) => `<button class="chip" data-ing="${i.id}" aria-pressed="${pantry.has(i.id)}" title="${tip(i)}">${nm(i)}</button>`).join("")}</div>`).join("")}
           </div>
           <div class="card unlock">
             <h3>🔓 Ce qui débloque le plus</h3>
-            ${gain.length ? `<ul>${gain.map((g) => `<li><button class="chip miss" data-ing="${g.i.id}" title="Ajouter à mon garde-manger">+ ${g.i.nom}</button>${g.unlocks.length ? ` débloque <strong>${g.unlocks.map((r) => r.nom).join(", ")}</strong>` : ""}${g.near ? ` <small>(+${g.near} presque)</small>` : ""}</li>`).join("")}</ul>` : `<p class="hint">Rien à débloquer avec un seul ingrédient.</p>`}
+            ${gain.length ? `<ul>${gain.map((g) => `<li><button class="chip miss" data-ing="${g.i.id}" title="Ajouter à mon garde-manger">+ ${nm(g.i)}</button>${g.unlocks.length ? ` débloque <strong>${g.unlocks.map((r) => nm(r)).join(", ")}</strong>` : ""}${g.near ? ` <small>(+${g.near} presque)</small>` : ""}</li>`).join("")}</ul>` : `<p class="hint">Rien à débloquer avec un seul ingrédient.</p>`}
           </div>
         </div>
         <div>
@@ -83,10 +91,10 @@
           <div class="recipes">${sorted.map((r) => {
             const m = missing(r), p = Math.round(completion(r) * 100);
             return `<div class="rcard${m.length ? "" : " ready"}">
-              <h3><span>${r.nom}</span><span class="pct">${p} %</span></h3>
+              <h3><span>${nm(r)}</span><span class="pct">${p} %</span></h3>
               <div class="bar"><i style="width:${p}%"></i></div>
-              ${m.length ? `<div class="chips" style="margin:0">${m.map((k) => `<button class="chip miss" data-ing="${k}">+ ${ing(k).nom}</button>`).join("")}</div>` : `<span class="chip have">✓ Tout est là</span>`}
-              <details><summary class="hint">Quantités</summary>${keys(r).map((k) => `<div class="hint" style="margin:0">${ing(k).nom} : ${qty(k, r.ing[k])}</div>`).join("")}</details>
+              ${m.length ? `<div class="chips" style="margin:0">${m.map((k) => `<button class="chip miss" data-ing="${k}">+ ${nm(ing(k))}</button>`).join("")}</div>` : `<span class="chip have">✓ Tout est là</span>`}
+              <details><summary class="hint">Quantités</summary>${keys(r).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))} : ${qty(k, r.ing[k])}</div>`).join("")}</details>
             </div>`;
           }).join("")}</div>
         </div>
@@ -103,7 +111,7 @@
   }
 
   // ---------- réseau ----------
-  const W = 800, H = 560;
+  const W = 900, H = 640;
   const nodes = REC.map((r, i) => {
     const a = (i / REC.length) * Math.PI * 2;
     return { r, x: W / 2 + Math.cos(a) * 200, y: H / 2 + Math.sin(a) * 200, vx: 0, vy: 0, fixed: false };
@@ -145,7 +153,7 @@
     step();
   }
 
-  const radius = (r) => 9 + keys(r).length * 1.1;
+  const radius = (r) => 6 + keys(r).length * 1.0;
   function updatePositions() {
     $$("#net .node").forEach((g, i) => g.setAttribute("transform", `translate(${nodes[i].x},${nodes[i].y})`));
     $$("#net line").forEach((l) => {
@@ -175,22 +183,22 @@
               const ready = !missing(n.r).length;
               const op = usePantry ? 0.3 + 0.7 * completion(n.r) : 1;
               const cls = `node${n.r === selected ? " sel" : ""}${usePantry && ready ? " ready" : ""}${i !== si && !neigh.has(i) && neigh.size ? " dim" : ""}`;
-              return `<g class="${cls}" data-i="${i}"><circle r="${radius(n.r)}" style="fill:var(--c-${mainFlour(n.r)});fill-opacity:${op}"/><text y="${radius(n.r) + 12}">${n.r.nom}</text></g>`;
+              return `<g class="${cls}" data-i="${i}"><circle r="${radius(n.r)}" style="fill:var(--c-${mainFlour(n.r)});fill-opacity:${op}"/><text y="${radius(n.r) + 12}">${nt(n.r)}</text></g>`;
             }).join("")}
           </svg>
-          <div class="legend">${Object.keys(FLOUR_LABEL).map((k) => `<span><i style="background:var(--c-${k})"></i>${FLOUR_LABEL[k]}</span>`).join("")}<span>Taille = nombre d'ingrédients</span></div>
+          <div class="legend">${Object.keys(FLOUR_LABEL).map((k) => `<span><i style="background:var(--c-${k})"></i>${nm(FLOUR_LABEL[k])}</span>`).join("")}<span>Taille = nombre d'ingrédients</span></div>
           <p class="hint">Plus deux recettes se ressemblent, plus elles sont proches. Glissez une pastille pour la déplacer, touchez-la pour la sélectionner.</p>
         </div>
         <div class="card">
-          <h2>${selected.nom}</h2>
-          <p class="hint">${keys(selected).map((k) => `${ing(k).nom} ${qty(k, selected.ing[k])}`).join(" · ")}</p>
-          ${m.length ? `<p>Il vous manque : ${m.map((k) => `<span class="chip miss" style="cursor:default">${ing(k).nom}</span>`).join(" ")}</p>` : `<p><span class="chip have">✓ Faisable avec mon garde-manger</span></p>`}
+          <h2>${nm(selected)}</h2>
+          <p class="hint">${keys(selected).map((k) => `${nm(ing(k))} ${qty(k, selected.ing[k])}`).join(" · ")}</p>
+          ${m.length ? `<p>Il vous manque : ${m.map((k) => `<span class="chip miss" style="cursor:default" title="${tip(ing(k))}">${nm(ing(k))}</span>`).join(" ")}</p>` : `<p><span class="chip have">✓ Faisable avec mon garde-manger</span></p>`}
           <h3>Recettes les plus proches</h3>
           ${sim.slice(0, 6).map(({ r, s }) => {
-            const shared = keys(r).filter((k) => selected.ing[k] !== undefined && !["sel"].includes(k)).map((k) => ing(k).nom);
-            return `<div class="sim-row" data-r="${r.id}"><span>${r.nom}<br><small class="hint">en commun : ${shared.join(", ") || "—"}</small></span><strong>${Math.round(s * 100)} %</strong></div>`;
+            const shared = keys(r).filter((k) => selected.ing[k] !== undefined && !["sel"].includes(k)).map((k) => nm(ing(k)));
+            return `<div class="sim-row" data-r="${r.id}"><span>${nm(r)}<br><small class="hint">en commun : ${shared.join(", ") || "—"}</small></span><strong>${Math.round(s * 100)} %</strong></div>`;
           }).join("")}
-          <button class="btn" id="goCmp" style="margin-top:.8rem">⚖️ Comparer avec ${sim[0].r.nom}</button>
+          <button class="btn" id="goCmp" style="margin-top:.8rem">⚖️ Comparer avec ${nm(sim[0].r)}</button>
         </div>
       </div>`;
 
@@ -247,8 +255,8 @@
     const max = {}; ING.forEach((i) => (max[i.id] = Math.max(...REC.map((r) => r.ing[i.id] || 0))));
     $("#tab-matrice").innerHTML = `
       <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. Touchez un en-tête pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai).</p>
-      <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${i.unite}">${i.nom}<br><small>${i.unite || "pièces"}</small></th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r) => `<tr><td class="rn">${r.nom}</td>${ING.map((i) => {
+      <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small></th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r) => `<tr><td class="rn">${nm(r)}</td>${ING.map((i) => {
         const v = r.ing[i.id];
         if (v === undefined) return `<td class="v"></td>`;
         const a = (0.15 + 0.7 * (v / max[i.id])).toFixed(2);
@@ -268,13 +276,13 @@
   function renderComparer() {
     const A = rec(cmpA), B = rec(cmpB);
     const all = ING.filter((i) => A.ing[i.id] !== undefined || B.ing[i.id] !== undefined);
-    const onlyA = all.filter((i) => B.ing[i.id] === undefined).map((i) => i.nom);
-    const onlyB = all.filter((i) => A.ing[i.id] === undefined).map((i) => i.nom);
+    const onlyA = all.filter((i) => B.ing[i.id] === undefined).map((i) => nm(i));
+    const onlyB = all.filter((i) => A.ing[i.id] === undefined).map((i) => nm(i));
     const common = all.filter((i) => A.ing[i.id] !== undefined && B.ing[i.id] !== undefined);
-    const diffq = common.filter((i) => A.ing[i.id] !== B.ing[i.id]).map((i) => i.nom);
+    const diffq = common.filter((i) => A.ing[i.id] !== B.ing[i.id]).map((i) => nm(i));
     const s = Math.round(SIM[idx(A)][idx(B)] * 100);
     const rA = ratios(A), rB = ratios(B);
-    const opts = (cur) => REC.map((r) => `<option value="${r.id}"${r.id === cur ? " selected" : ""}>${r.nom}</option>`).join("");
+    const opts = (cur) => REC.map((r) => `<option value="${r.id}"${r.id === cur ? " selected" : ""}>${nt(r)}</option>`).join("");
     const metaRow = (label, k, unit) => (A.meta[k] !== undefined || B.meta[k] !== undefined) ? `<tr><td>${label}</td><td>${A.meta[k] !== undefined ? A.meta[k] + unit : "—"}</td><td>${B.meta[k] !== undefined ? B.meta[k] + unit : "—"}</td><td class="d"></td></tr>` : "";
     const barMax = (id) => Math.max(A.ing[id] || 0, B.ing[id] || 0) || 1;
 
@@ -284,14 +292,14 @@
         <button class="btn" id="swap">Échanger</button>
         <span class="chip have" style="cursor:default">Similarité ${s} %</span>
       </div>
-      <div class="diffnote"><strong>${B.nom}</strong> par rapport à <strong>${A.nom}</strong> :
+      <div class="diffnote"><strong>${nm(B)}</strong> par rapport à <strong>${nm(A)}</strong> :
         ${onlyB.length ? `ajoute <strong>${onlyB.join(", ")}</strong>` : "n'ajoute aucun ingrédient"}${onlyA.length ? `, retire <strong>${onlyA.join(", ")}</strong>` : ""}${diffq.length ? `, et change les quantités de ${diffq.join(", ")}` : ""}.</div>
       <div class="card" style="overflow-x:auto"><table class="cmp">
-        <thead><tr><th>Ingrédient</th><th>${A.nom}</th><th>${B.nom}</th><th>Écart</th></tr></thead>
+        <thead><tr><th>Ingrédient</th><th>${nm(A)}</th><th>${nm(B)}</th><th>Écart</th></tr></thead>
         <tbody>${all.map((i) => {
           const a = A.ing[i.id], b = B.ing[i.id], m = barMax(i.id);
           const d = a !== undefined && b !== undefined ? (b - a === 0 ? "=" : (b - a > 0 ? "+" : "") + +(b - a).toFixed(1)) : a === undefined ? "nouveau" : "retiré";
-          return `<tr><td>${i.nom}${i.unite ? ` <small class="hint">(${i.unite})</small>` : ""}</td>
+          return `<tr><td><span title="${tip(i)}">${nm(i)}</span>${i.unite ? ` <small class="hint">(${i.unite})</small>` : ""}</td>
             <td>${a !== undefined ? `<div class="pair">${a}<span class="b" style="width:${Math.round((a / m) * 60)}px"></span></div>` : "—"}</td>
             <td>${b !== undefined ? `<div class="pair">${b}<span class="b b2" style="width:${Math.round((b / m) * 60)}px"></span></div>` : "—"}</td>
             <td class="d">${d}</td></tr>`;
@@ -299,7 +307,7 @@
         ${metaRow("Four", "four", " °C")}${metaRow("Cuisson", "cuisson", " min")}${metaRow("Température de l'eau/lait", "temp", "")}
         </tbody></table></div>
       <div class="card"><h3>Proportions (pour 1 g de farine)</h3>
-        ${rA && rB ? `<table class="cmp"><thead><tr><th></th><th>${A.nom}</th><th>${B.nom}</th></tr></thead><tbody>
+        ${rA && rB ? `<table class="cmp"><thead><tr><th></th><th>${nm(A)}</th><th>${nm(B)}</th></tr></thead><tbody>
           <tr><td>Liquide (lait + eau, ml)</td><td>${rA.liquide}</td><td>${rB.liquide}</td></tr>
           <tr><td>Matière grasse (g/ml)</td><td>${rA.gras}</td><td>${rB.gras}</td></tr>
           <tr><td>Sucre (g)</td><td>${rA.sucre}</td><td>${rB.sucre}</td></tr>
@@ -315,14 +323,14 @@
   // ---------- radar ----------
   // Chaque axe = part de la masse totale de la recette. Facteurs de conversion en grammes.
   const ALL_AXES = [
-    { id: "farine", label: "Farines", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
-    { id: "liquide", label: "Liquides", parts: { lait: 1.03, eau: 1, yaourt: 125 } },
-    { id: "oeufs", label: "Œufs", parts: { oeufs: 55 } },
-    { id: "gras", label: "Matières grasses", parts: { beurre: 1, huile: 0.92 } },
-    { id: "sucre", label: "Sucres", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
-    { id: "garniture", label: "Garnitures salées", parts: { chorizo: 1, gruyere: 1 } },
+    { id: "farine", nom: "Farines", en: "Flours", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
+    { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125 } },
+    { id: "oeufs", nom: "Œufs", en: "Eggs", parts: { oeufs: 55 } },
+    { id: "gras", nom: "Matières grasses", en: "Fats", parts: { beurre: 1, huile: 0.92 } },
+    { id: "sucre", nom: "Sucres", en: "Sugars", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
+    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, gruyere: 1, fruits: 1 } },
   ];
-  const OTHER = { levure: 10, sel: 0.3 }; // comptés dans la masse totale, sans axe
+  const OTHER = { levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
   // Deux modes : « total » (toute la masse) ou « sec » (sans les liquides, pour comparer les pâtes indépendamment de leur hydratation).
   let radarMode = store.get("radarMode", "total");
   let AXES = ALL_AXES;
@@ -354,7 +362,7 @@
     const labels = AXES.map((ax, i) => {
       const a = -Math.PI / 2 + (i / AXES.length) * Math.PI * 2, x = Math.cos(a) * (R + 14), y = Math.sin(a) * (R + 14);
       const anchor = Math.abs(Math.cos(a)) < 0.2 ? "middle" : Math.cos(a) > 0 ? "start" : "end";
-      return `<text class="ax" x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="${anchor}">${ax.label}</text>`;
+      return `<text class="ax" x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="${anchor}">${nt(ax)}</text>`;
     }).join("");
     const ringLabels = rings.map((v) => { const t = -Math.PI / 2 + Math.PI / AXES.length, d = rad(v, R); return `<text x="${(Math.cos(t) * d + 3).toFixed(1)}" y="${(Math.sin(t) * d - 2).toFixed(1)}">${Math.round(v * 100)} %</text>`; }).join("");
     const ordered = orderedRecipes();
@@ -373,16 +381,16 @@
             ${sel.map(({ r, k }) => `<polygon points="${poly(SHARES[idx(r)], R)}" style="stroke:var(--o${k + 1});fill:var(--o${k + 1})"/>`).join("")}
             ${labels}
           </svg>
-          <div class="chips" style="margin-top:.6rem">${sel.map(({ r, k }) => `<button class="chip o" data-r="${r.id}" style="border-color:var(--o${k + 1})"><span style="color:var(--o${k + 1})">●</span> ${r.nom} ✕</button>`).join("") || `<span class="hint">Aucune recette sélectionnée.</span>`}</div>
-          ${sel.length ? `<div class="card" style="overflow-x:auto"><table class="cmp"><thead><tr><th>Part de la masse</th>${sel.map(({ r, k }) => `<th style="color:var(--o${k + 1})">${r.nom}</th>`).join("")}</tr></thead><tbody>
-            ${AXES.map((ax, i) => `<tr><td>${ax.label}</td>${sel.map(({ r }) => { const v = SHARES[idx(r)][i]; return `<td>${v ? Math.round(v * 100) + " %" : "—"}</td>`; }).join("")}</tr>`).join("")}
-          </tbody></table><p class="hint" style="margin-bottom:0">Levure et sel entrent dans la masse mais n'ont pas d'axe.</p></div>` : ""}
+          <div class="chips" style="margin-top:.6rem">${sel.map(({ r, k }) => `<button class="chip o" data-r="${r.id}" style="border-color:var(--o${k + 1})"><span style="color:var(--o${k + 1})">●</span> ${nm(r)} ✕</button>`).join("") || `<span class="hint">Aucune recette sélectionnée.</span>`}</div>
+          ${sel.length ? `<div class="card" style="overflow-x:auto"><table class="cmp"><thead><tr><th>Part de la masse</th>${sel.map(({ r, k }) => `<th style="color:var(--o${k + 1})">${nm(r)}</th>`).join("")}</tr></thead><tbody>
+            ${AXES.map((ax, i) => `<tr><td>${nm(ax)}</td>${sel.map(({ r }) => { const v = SHARES[idx(r)][i]; return `<td>${v ? Math.round(v * 100) + " %" : "—"}</td>`; }).join("")}</tr>`).join("")}
+          </tbody></table><p class="hint" style="margin-bottom:0">Levures, sel, moutarde, vinaigre, ail et muscade entrent dans la masse mais n'ont pas d'axe.</p></div>` : ""}
         </div>
         <div>
           <h3>Toutes les recettes</h3>
           <p class="hint">La forme résume le type de pâte. Touchez pour ajouter ou retirer du radar.</p>
           <div class="minis">${ordered.map((r) => `<button class="mini${radarSel.includes(r.id) ? " on" : ""}" data-r="${r.id}">
-            <svg viewBox="-62 -62 124 124" aria-hidden="true">${grid(50, [0.25, RMAX])}<polygon points="${poly(SHARES[idx(r)], 50)}" style="stroke:var(--c-${mainFlour(r)});fill:var(--c-${mainFlour(r)})"/></svg>${r.nom}</button>`).join("")}</div>
+            <svg viewBox="-62 -62 124 124" aria-hidden="true">${grid(50, [0.25, RMAX])}<polygon points="${poly(SHARES[idx(r)], 50)}" style="stroke:var(--c-${mainFlour(r)});fill:var(--c-${mainFlour(r)})"/></svg>${nm(r)}</button>`).join("")}</div>
         </div>
       </div>`;
     $$("#tab-radar [data-mode]").forEach((b) => b.addEventListener("click", () => {
@@ -397,6 +405,11 @@
     }));
   }
 
+  // ---------- langue ----------
+  function renderAll() { renderPlacard(); renderReseau(); renderMatrice(); renderComparer(); renderRadar(); }
+  function syncLang() { $$("#lang [data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang))); document.documentElement.dataset.lang = lang; }
+  $$("#lang [data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("lang", lang); syncLang(); renderAll(); }));
+
   // ---------- onglets ----------
   function showTab(name) {
     $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
@@ -406,6 +419,7 @@
   }
   $$(".tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
+  syncLang();
   renderPlacard();
   renderMatrice();
   renderComparer();
