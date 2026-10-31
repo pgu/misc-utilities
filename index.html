@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini-apps</title>
+  <style>
+    :root { --bg:#f6f3ea; --card:#fff; --text:#2a2a24; --muted:#6b6a5e; --line:#ddd8c6; --accent:#2f7d4a; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#1b1c18; --card:#26271f; --text:#ecebe2; --muted:#a3a291; --line:#3a3b30; --accent:#6cc38a; } }
+    body { margin:0; font:16px/1.5 system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width:800px; margin:0 auto; padding:2rem 16px; }
+    h1 { margin:0 0 .25rem; }
+    p.lead { color:var(--muted); margin-top:0; }
+    .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin-top:1.5rem; }
+    a.app { display:block; padding:1.2rem; background:var(--card); border:1px solid var(--line); border-radius:12px; text-decoration:none; color:inherit; }
+    a.app:hover { border-color:var(--accent); }
+    a.app .e { font-size:2rem; }
+    a.app strong { display:block; margin:.3rem 0; }
+    a.app span { color:var(--muted); font-size:.92rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mini-apps</h1>
+    <p class="lead">Petits outils du quotidien, tout en français.</p>
+    <div class="grid">
+      <a class="app" href="potager/">
+        <div class="e">🥕</div>
+        <strong>Mon potager</strong>
+        <span>Plan, rotation sur 4 ans, calendrier et gestes de chaque saison pour un jardin de 10 × 10 m.</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

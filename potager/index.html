@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon potager – 10 × 10 m</title>
+  <meta name="description" content="Apprendre à cultiver un potager de 100 m² : plan, rotation sur 4 ans, calendrier et gestes de chaque saison.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥕</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="../">← Mini-apps</a>
+    <h1>🥕 Mon potager <small>10 × 10 m</small></h1>
+    <p class="lead">Un guide interactif pour comprendre quoi faire, et pourquoi, à chaque saison.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="mois" aria-selected="true">📅 Ce mois-ci</button>
+    <button role="tab" data-tab="plan" aria-selected="false">🗺️ Plan &amp; rotation</button>
+    <button role="tab" data-tab="calendrier" aria-selected="false">📊 Calendrier</button>
+    <button role="tab" data-tab="legumes" aria-selected="false">🥬 Légumes</button>
+    <button role="tab" data-tab="demarrer" aria-selected="false">🚜 Démarrer</button>
+    <button role="tab" data-tab="quiz" aria-selected="false">🧠 Quiz</button>
+  </nav>
+
+  <main>
+    <section id="tab-mois" class="panel"></section>
+    <section id="tab-plan" class="panel" hidden></section>
+    <section id="tab-calendrier" class="panel" hidden></section>
+    <section id="tab-legumes" class="panel" hidden></section>
+    <section id="tab-demarrer" class="panel" hidden></section>
+    <section id="tab-quiz" class="panel" hidden></section>
+  </main>
+
+  <dialog id="fiche"></dialog>
+
+  <footer>
+    <p>Conseils adaptés à un climat tempéré (France hors montagne et pourtour méditerranéen). Les dates varient de 2 à 4 semaines selon votre région et l'année : observez votre sol et la météo.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
