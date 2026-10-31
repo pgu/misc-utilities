@@ -44,7 +44,7 @@
   const similarTo = (r) => REC.filter((o) => o !== r).map((o) => ({ r: o, s: SIM[idx(r)][idx(o)] })).sort((x, y) => y.s - x.s);
 
   // ---------- garde-manger ----------
-  const BASE = ["farine", "oeufs", "lait", "beurre", "sel", "sucre", "levure_chimique", "huile"];
+  const BASE = ["farine", "oeufs", "lait", "eau", "beurre", "sel", "sucre", "levure_chimique", "huile"];
   let pantry = new Set(store.get("placard", BASE).filter((id) => ing(id))); // ignore les anciens ids disparus
   const savePantry = () => store.set("placard", [...pantry]);
   const missing = (r) => keys(r).filter((k) => !pantry.has(k));
@@ -324,7 +324,7 @@
   // Chaque axe = part de la masse totale de la recette. Facteurs de conversion en grammes.
   const ALL_AXES = [
     { id: "farine", nom: "Farines", en: "Flours", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
-    { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125 } },
+    { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125, creme_fraiche: 1.0 } },
     { id: "oeufs", nom: "Œufs", en: "Eggs", parts: { oeufs: 55 } },
     { id: "gras", nom: "Matières grasses", en: "Fats", parts: { beurre: 1, huile: 0.92 } },
     { id: "sucre", nom: "Sucres", en: "Sugars", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },

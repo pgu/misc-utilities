@@ -66,6 +66,14 @@ const DONNEES = {
    "en": "milk"
   },
   {
+   "id": "creme_fraiche",
+   "nom": "Crème fraîche",
+   "unite": "ml",
+   "note": "1 pot == 20cl",
+   "cat": "liquide",
+   "en": "crème fraîche (sour cream)"
+  },
+  {
    "id": "beurre",
    "nom": "Beurre",
    "unite": "g",
@@ -623,6 +631,25 @@ const DONNEES = {
     "cuisson": 2
    },
    "en": "Blinis"
+  },
+  {
+   "id": "gache-vendeenne",
+   "nom": "Gâche vendéenne",
+   "ing": {
+    "farine": 500,
+    "oeufs": 3,
+    "creme_fraiche": 200,
+    "beurre": 100,
+    "levure_de_boulanger": 1,
+    "sel": 5,
+    "sucre": 100
+   },
+   "meta": {
+    "temp": "tiède",
+    "four": 180,
+    "cuisson": 35
+   },
+   "en": "Gâche vendéenne (Vendée brioche)"
   },
   {
    "id": "brioche",
