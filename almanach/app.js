@@ -217,7 +217,7 @@
     const regOpts = (cc === "DE" ? schoolRegs : regs).map(([k, n]) => `<option value="${k}"${k === calState.r ? " selected" : ""}>${n}</option>`).join("");
     $("#tab-calendrier").innerHTML = `
       <div class="ycontrols">
-        <button class="btn" id="cprev" ${ALMANACH.years.includes(y - 1) ? "" : "disabled"}>◀</button><strong style="font-size:1.2rem">${y}</strong><button class="btn" id="cnext" ${ALMANACH.years.includes(y + 1) ? "" : "disabled"}>▶</button>
+        <button class="btn" id="cprev" title="Période précédente" ${calState.half === 1 && !ALMANACH.years.includes(y - 1) ? "disabled" : ""}>◀</button><strong style="font-size:1.2rem;min-width:9.5rem;text-align:center">${y} · ${calState.half === 1 ? "Janv → Juin" : "Juil → Déc"}</strong><button class="btn" id="cnext" title="Période suivante" ${calState.half === 2 && !ALMANACH.years.includes(y + 1) ? "disabled" : ""}>▶</button>
         <button class="btn${calState.half === 1 ? " primary" : ""}" data-half="1">Janv → Juin</button><button class="btn${calState.half === 2 ? " primary" : ""}" data-half="2">Juil → Déc</button>
         <select id="cc" aria-label="Pays">${countryOpts}</select>
         ${regOpts ? `<select id="cr" aria-label="Région"><option value="">${cc === "DE" ? "Choisir un Land" : "National"}</option>${regOpts}</select>` : ""}
@@ -232,8 +232,9 @@
         <span class="hint">Chiffres à droite : numéro de semaine ISO.</span>
       </div>`;
     const save = () => { store.set("cal", calState); renderCalendrier(); };
-    $("#cprev").addEventListener("click", () => setYear(y - 1));
-    $("#cnext").addEventListener("click", () => setYear(y + 1));
+    // ◀ ▶ avancent d'un semestre (Juil → Déc 2026 ▶ Janv → Juin 2027).
+    $("#cprev").addEventListener("click", () => { if (calState.half === 2) { calState.half = 1; save(); } else { calState.half = 2; store.set("cal", calState); setYear(y - 1); } });
+    $("#cnext").addEventListener("click", () => { if (calState.half === 1) { calState.half = 2; save(); } else { calState.half = 1; store.set("cal", calState); setYear(y + 1); } });
     $$("#tab-calendrier [data-half]").forEach((b) => b.addEventListener("click", () => { calState.half = +b.dataset.half; save(); }));
     $("#cc").addEventListener("change", (e) => { calState.c = e.target.value; calState.r = ""; save(); });
     $$("#tab-calendrier [data-zone]").forEach((cb) => cb.addEventListener("change", () => {
