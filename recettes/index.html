@@ -27,16 +27,17 @@
     <button role="tab" data-tab="reseau" aria-selected="false">🕸️ Réseau</button>
     <button role="tab" data-tab="radar" aria-selected="false">🎯 Radar</button>
     <button role="tab" data-tab="matrice" aria-selected="false">🔢 Matrice</button>
-    <button role="tab" data-tab="comparer" aria-selected="false">⚖️ Comparer</button>
   </nav>
 
-  <main>
-    <section id="tab-placard" class="panel"></section>
-    <section id="tab-reseau" class="panel" hidden></section>
-    <section id="tab-radar" class="panel" hidden></section>
-    <section id="tab-matrice" class="panel" hidden></section>
-    <section id="tab-comparer" class="panel" hidden></section>
-  </main>
+  <div class="shell">
+    <main>
+      <section id="tab-placard" class="panel"></section>
+      <section id="tab-reseau" class="panel" hidden></section>
+      <section id="tab-radar" class="panel" hidden></section>
+      <section id="tab-matrice" class="panel" hidden></section>
+    </main>
+    <aside id="split" aria-label="Comparaison de deux recettes"></aside>
+  </div>
 
   <footer><p>Données : tableau de recettes (<code>resources/</code>), régénéré avec <code>node recettes/build-data.mjs</code>. Quantités indicatives, par fournée.</p></footer>
 
