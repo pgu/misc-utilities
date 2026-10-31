@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Almanach européen</title>
+  <meta name="description" content="Jours fériés et vacances scolaires en France (zones A, B, C), Allemagne, Espagne, Italie et Royaume-Uni.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="../">← Mini-apps</a>
+    <h1>📅 Almanach européen</h1>
+    <p class="lead">Jours fériés et vacances scolaires : France (zones A, B, C), Allemagne, Espagne, Italie, Royaume-Uni.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Vues">
+    <button role="tab" data-tab="bientot" aria-selected="true">⏭️ Bientôt</button>
+    <button role="tab" data-tab="annee" aria-selected="false">📊 Année</button>
+    <button role="tab" data-tab="liste" aria-selected="false">📋 Liste</button>
+  </nav>
+
+  <main>
+    <section class="card" id="rows" aria-label="Lignes affichées"></section>
+    <section id="tab-bientot" class="panel"></section>
+    <section id="tab-annee" class="panel" hidden></section>
+    <section id="tab-liste" class="panel" hidden></section>
+  </main>
+
+  <footer id="foot"></footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+name: Refresh almanach data
+
+on:
+  schedule:
+    - cron: "0 5 1 * *" # 1st of each month, 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fetch holidays
+        run: node almanach/build-data.mjs
+      - name: Commit and redeploy if the data changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- almanach/data.js; then
+            echo "No change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add almanach/data.js
+          git commit -m "chore(almanach): refresh holiday data"
+          git push
+          # Pushes made with GITHUB_TOKEN do not trigger other workflows; workflow_dispatch is the exception.
+          gh workflow run pages.yml --ref "${GITHUB_REF_NAME}"
