@@ -219,3 +219,5 @@ table.mx td .var { display:block; font-size:.66rem; line-height:1.15; font-style
 .chip .var { color:inherit; opacity:.8; }
 .aim { margin:0 0 .8rem; padding:.45rem .7rem; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:6px; font-size:.88rem; }
 .tree-list li.tgt .rl::before { content:"🎯 "; }
+.aka { display:block; font-size:.72em; font-weight:400; color:var(--muted); }
+table.mx td.rn .aka { display:inline; margin-left:.3rem; font-size:.68rem; }

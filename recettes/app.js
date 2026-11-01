@@ -19,6 +19,19 @@
   // Variante de produit propre à une recette (ex. masa harina / harina PAN) et note explicative de l'ingrédient.
   const vtag = (r, id) => (r.variant && r.variant[id] ? ` <small class="var">${nm(r.variant[id])}</small>` : "");
   const vnote = (i) => `<p class="vnote">⚠️ <strong>${nm(i)}</strong> : ${nt(i.vnote)}</p>`;
+  // Autres appellations d'une recette (chouquettes = pâte à choux) : visibles sous le nom, et cherchables dans les listes déroulantes.
+  const akaList = (r) => {
+    if (!r.aka) return [];
+    const split = (t) => t.replace(/\s*\([^)]*\)/g, "").split(/,\s*/), fr = split(r.aka.nom), en = split(r.aka.en);
+    return fr.map((x, i) => ({ nom: x, en: en[i] || x }));
+  };
+  const akaSmall = (r) => (r.aka ? ` <small class="aka">aussi : ${akaList(r).map(nt).join(", ")}</small>` : "");
+  function recipeOptions(cur, blank) {
+    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1), items = [];
+    REC.forEach((r) => { items.push({ l: nt(r), id: r.id, sel: r.id === cur }); akaList(r).forEach((a) => items.push({ l: `${cap(nt(a))} → ${nt(r)}`, id: r.id, sel: false })); });
+    items.sort((x, y) => x.l.localeCompare(y.l, lang === "en" ? "en" : "fr"));
+    return `<option value=""${cur ? "" : " selected"}>${blank}</option>` + items.map((o) => `<option value="${o.id}"${o.sel ? " selected" : ""}>${o.l}</option>`).join("");
+  }
   const tip = (i) => (lang === "fr" ? [i.en, i.note].filter(Boolean).join(" — ") : i.note || "");
   const CAT_EN = { farine: "Flours", liquide: "Liquids", base: "Eggs", gras: "Fats", levant: "Leavening", assaisonnement: "Seasoning", sucre: "Sugar & chocolate", garniture: "Fillings", autre: "Other" };
   const catObj = (c) => ({ nom: CAT_LABEL[c] || c, en: CAT_EN[c] || c });
@@ -126,7 +139,7 @@
           <div class="recipes">${sorted.map((r) => {
             const m = missing(r), p = Math.round(completion(r) * 100);
             return `<div class="rcard${m.length ? "" : " ready"}" data-rid="${r.id}">
-              <h3><span>${nm(r)}</span><span class="pickbox"><span class="pct">${p} %</span>${pickBtn(r.id)}</span></h3>
+              <h3><span>${nm(r)}${akaSmall(r)}</span><span class="pickbox"><span class="pct">${p} %</span>${pickBtn(r.id)}</span></h3>
               <div class="bar"><i style="width:${p}%"></i></div>
               ${m.length ? `<div class="chips" style="margin:0">${m.map((k) => `<button class="chip miss" data-ing="${k}">+ ${nm(ing(k))}${vtag(r, k)}</button>`).join("")}</div>` : `<span class="chip have">✓ Tout est là</span>`}
               <details><summary class="hint">Quantités</summary>${keys(r).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))}${vtag(r, k)} : ${qty(k, r.ing[k])}</div>`).join("")}</details>
@@ -314,7 +327,7 @@
       <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. ⇅ trie par colonne (décroissant, croissant, ordre d'origine). Touchez un nom d'ingrédient pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai), une ligne pour la surligner, un nom de recette pour la comparer (A/B).</p>
       ${ING.filter((i) => i.vnote && pantry.has(i.id)).map(vnote).join("")}
       <div class="mx-wrap" style="margin-top:.6rem"><table class="mx"><thead><tr><th class="rn">Recette ${sortBtn("nom")}</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small>${i.vnote ? ' <span title="Voir la note sous le tableau">⚠️</span>' : ""}<br>${sortBtn(i.id)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)${r.aka ? " · aussi : " + nt(r.aka) : ""}">${nm(r)}</td>${ING.map((i) => {
+      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)">${nm(r)}${akaSmall(r)}</td>${ING.map((i) => {
         const v = r.ing[i.id];
         if (v === undefined) return `<td class="v"></td>`;
         const a = (0.15 + 0.7 * (v / max[i.id])).toFixed(2);
@@ -351,8 +364,7 @@
   }
   function renderComparer() {
     const A = cmp.a && rec(cmp.a), B = cmp.b && rec(cmp.b);
-    const byName = [...REC].sort((x, y) => nt(x).localeCompare(nt(y), lang === "en" ? "en" : "fr")); // tri sur le nom affiché
-    const opts = (cur) => `<option value=""${cur ? "" : " selected"}>— choisir —</option>` + byName.map((r) => `<option value="${r.id}"${r.id === cur ? " selected" : ""}>${nt(r)}</option>`).join("");
+    const opts = (cur) => recipeOptions(cur, "— choisir —");   // tri sur le nom affiché, alias compris
     const head = `
       <div class="split-head"><h2>⚖️ Comparaison</h2>
         <div><button class="btn" id="swap"${A && B ? "" : " disabled"}>⇄ Échanger</button> <button class="btn" id="clr"${A || B ? "" : " disabled"}>Vider</button></div></div>
@@ -608,7 +620,7 @@
     return `<aside class="tree-list"><h3>Recettes</h3>
       <p class="hint" style="margin:0 0 .5rem">${reqNames.length ? `Chemin : <strong>${reqNames.join(" + ")}</strong>. ` : ""}${n} compatible${n > 1 ? "s" : ""} sur ${REC.length}.</p>
       ${ING.filter((i) => i.vnote && REC.some((r) => r.variant?.[i.id] && r.ing[i.id] !== undefined && req.every((k) => r.ing[k] !== undefined))).map(vnote).join("")}
-      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}${r.id === treeTarget ? " tgt" : ""}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>${Object.keys(r.variant || {}).map((k) => vtag(r, k)).join("")}
+      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}${r.id === treeTarget ? " tgt" : ""}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>${Object.keys(r.variant || {}).map((k) => vtag(r, k)).join("")}${r.aka ? `<span class="st">${akaSmall(r)}</span>` : ""}
         <span class="st">${!ok ? `sans ${gone.map((k) => nm(ing(k))).join(", ")}` : miss.length ? `manque ${miss.map((k) => nm(ing(k)) + vtag(r, k)).join(", ")}` : "✓ faisable"}</span></li>`).join("")}</ul></aside>`;
   }
 
@@ -629,7 +641,7 @@
       <div class="ctl" style="margin-bottom:.8rem">
         <button class="btn" id="treeReset">Replier tout</button>
         <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
-        <label>🎯 Viser une recette <select id="treeTarget"><option value="">— aucune —</option>${[...REC].sort((a, b) => nt(a).localeCompare(nt(b), lang === "en" ? "en" : "fr")).map((r) => `<option value="${r.id}"${r.id === treeTarget ? " selected" : ""}>${nt(r)}</option>`).join("")}</select></label>
+        <label>🎯 Viser une recette <select id="treeTarget">${recipeOptions(treeTarget, "— aucune —")}</select></label>
       </div>
       ${T ? `<p class="aim">🎯 <strong>${nm(T)}</strong> : il ${left.length ? `reste à ajouter <strong>${left.map((k) => nm(ing(k)) + vtag(T, k)).join(", ")}</strong>.` : "ne manque rien, elle est faisable."} Le chemin est ouvert ; l'arbre ne propose plus que ses ingrédients.</p>` : ""}
       <p class="hint" style="margin:0 0 .8rem">Choisissez l'ingrédient de départ dans le premier bloc, puis touchez une suggestion pour développer l'étape suivante. Le chemin ne propose que des ingrédients présents dans une recette qui contient tout le chemin ; la liste à droite grise les recettes écartées. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>

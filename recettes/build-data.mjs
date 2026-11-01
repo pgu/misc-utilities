@@ -33,7 +33,7 @@ const META = { "Température": "temp", "Four": "four", "Cuisson": "cuisson" };
 // Catégorie et unité par défaut quand le CSV ne les précise pas.
 const CAT = { farine: "farine", sarrasin: "farine", mais: "farine", avoine: "farine", riz_gluant: "farine", fecule: "autre", noisettes: "garniture", yaourt: "liquide", oeufs: "base", eau: "liquide", lait: "liquide", creme_fraiche: "liquide", creme_liquide: "liquide", beurre: "gras", huile: "gras", levure_chimique: "levant", levure_de_boulanger: "levant", sel: "assaisonnement", moutarde: "assaisonnement", vinaigre_ou_citron: "assaisonnement", ail: "assaisonnement", muscade: "assaisonnement", sucre: "sucre", sucre_vanille: "sucre", chocolat: "sucre", chorizo: "garniture", gruyere: "garniture", lardons: "garniture", jambon: "garniture", fromage_frais: "garniture", fruits: "garniture", chapelure: "autre" };
 // Autres appellations d'une même pâte (affichées dans la comparaison et au survol).
-const AKA = { "pate-a-choux": { nom: "chouquettes (avec sucre perlé), éclairs, profiteroles, religieuses", en: "chouquettes (with pearl sugar), éclairs, profiteroles, cream puffs" } };
+const AKA = { "pate-a-choux": { nom: "chouquettes (avec sucre perlé), éclairs, profiteroles, religieuses", en: "chouquettes (with pearl sugar), éclairs, profiteroles, religieuses (stacked cream puffs)" } };
 // Même ingrédient, produit différent selon la recette (affiché à côté des quantités, avec une explication par ingrédient).
 const VARIANT = {
   "tortillas-de-mais": { mais: { nom: "masa harina", en: "masa harina" } },

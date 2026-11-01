@@ -582,7 +582,7 @@ const DONNEES = {
    },
    "aka": {
     "nom": "chouquettes (avec sucre perlé), éclairs, profiteroles, religieuses",
-    "en": "chouquettes (with pearl sugar), éclairs, profiteroles, cream puffs"
+    "en": "chouquettes (with pearl sugar), éclairs, profiteroles, religieuses (stacked cream puffs)"
    },
    "en": "Choux pastry"
   },
