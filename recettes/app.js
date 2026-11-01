@@ -464,9 +464,11 @@
   }
 
   // ---------- arbre : quels ingrédients ajouter ensuite ? ----------
-  // Un nœud = un ensemble d'ingrédients (racine + chemin). Ses enfants = les 3 ingrédients qui rapprochent le plus de recettes :
-  // d'abord celles qui deviennent faisables, puis celles à 1 ingrédient manquant, puis à 2.
+  // Un nœud = un ensemble d'ingrédients (racine + chemin). Le chemin ne mène qu'à des recettes qui contiennent TOUS ses ingrédients :
+  // une suggestion doit apparaître dans au moins une de ces recettes « compatibles » (pas d'œufs sur la route des churros).
+  // Classement : recettes compatibles rendues faisables, puis à 1 ingrédient manquant, puis à 2, puis fréquence.
   // Les farines forment une famille : un seul bloc « Farine » dont on choisit le type, chaque type ouvrant son propre sous-arbre.
+  // À droite, la liste des recettes suit le nœud sélectionné : celles qui ne contiennent plus tout le chemin sont grisées.
   const STAPLES = ["sel", "eau"];
   const FLOURS = ["farine", "sarrasin", "mais", "avoine"];
   const FLOUR_SHORT = { farine: { nom: "blé", en: "wheat" }, sarrasin: { nom: "sarrasin", en: "buckwheat" }, mais: { nom: "maïs", en: "corn" }, avoine: { nom: "avoine", en: "oats" } };
@@ -475,6 +477,7 @@
   let treeOpen = new Set(store.get("treeOpen", []));
   let treeSel = store.get("treeSel", {});                  // type de farine choisi par nœud parent
   let treeStaples = store.get("treeStaples", true);
+  let treeCur = store.get("treeCur", "");                  // clé du nœud sélectionné ("" = racine)
   const MAX_DEPTH = 8;
 
   const treeBase = (path) => {
@@ -483,36 +486,39 @@
     if (treeStaples) STAPLES.forEach((k) => s.add(k));
     return s;
   };
-  const doable = (have) => REC.filter((r) => keys(r).every((k) => have.has(k)));
-  function gainOf(i, have) {
-    const unlocked = []; let n1 = 0, n2 = 0;
-    for (const r of REC) {
+  const treeReq = (path) => (treeRoot[0] === "pantry" ? [] : [...treeRoot]).concat(path);   // ingrédients que la recette doit contenir
+  const treePool = (path) => { const req = treeReq(path); return REC.filter((r) => req.every((k) => r.ing[k] !== undefined)); };
+  const doable = (have, pool = REC) => pool.filter((r) => keys(r).every((k) => have.has(k)));
+  function gainOf(i, have, pool) {
+    const unlocked = []; let n1 = 0, n2 = 0, cnt = 0;
+    for (const r of pool) {
       if (r.ing[i.id] === undefined) continue;
+      cnt++;
       const after = keys(r).filter((k) => !have.has(k)).length - 1;
       if (after === 0) unlocked.push(r); else if (after === 1) n1++; else if (after === 2) n2++;
     }
-    return { i, unlocked, n1, n2, score: unlocked.length * 10000 + n1 * 100 + n2 };
+    return { i, unlocked, n1, n2, cnt, score: unlocked.length * 10000 + n1 * 100 + n2 + cnt / 1000 };
   }
-  function treeSuggest(have) {
-    const cands = ING.filter((i) => !have.has(i.id)).map((i) => gainOf(i, have));
+  function treeSuggest(have, pool) {
+    const cands = ING.filter((i) => !have.has(i.id)).map((i) => gainOf(i, have, pool)).filter((c) => c.cnt > 0);
     const flours = cands.filter((c) => FLOURS.includes(c.i.id)).sort((a, b) => b.score - a.score);
-    const out = cands.filter((c) => !FLOURS.includes(c.i.id) && c.score > 0);
-    if (flours.length && flours[0].score > 0) out.push({ ...flours[0], best: flours[0], members: [...flours].sort((a, b) => FLOURS.indexOf(a.i.id) - FLOURS.indexOf(b.i.id)), hasFlour: FLOURS.some((f) => have.has(f)) });
+    const out = cands.filter((c) => !FLOURS.includes(c.i.id));
+    if (flours.length) out.push({ ...flours[0], best: flours[0], members: [...flours].sort((a, b) => FLOURS.indexOf(a.i.id) - FLOURS.indexOf(b.i.id)), hasFlour: FLOURS.some((f) => have.has(f)) });
     return out.sort((a, b) => b.score - a.score).slice(0, 3);
   }
   const rtags = (list, max = 4) => list.slice(0, max).map((r) => `<button class="rtag" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>`).join("") + (list.length > max ? `<span class="hint"> +${list.length - max}</span>` : "");
 
   function treeNode(path, s, parentKey) {
-    const key = path.join(">"), open = treeOpen.has(key), have = treeBase(path), done = doable(have);
-    const kids = open && path.length < MAX_DEPTH ? treeSuggest(have) : [];
-    const gain = `<div class="gain">${s.unlocked.length ? `<span class="ok">+${s.unlocked.length} faisable${s.unlocked.length > 1 ? "s" : ""}</span>` : ""}${s.n1 ? `<span title="Recettes auxquelles il ne manquerait plus qu'un ingrédient">${s.n1} presque</span>` : ""}${s.n2 ? `<span title="Recettes auxquelles il manquerait encore 2 ingrédients">${s.n2} à 2 près</span>` : ""}${!s.score ? `<span>aucun gain direct</span>` : ""}</div>`;
+    const key = path.join(">"), open = treeOpen.has(key), have = treeBase(path), pool = treePool(path), done = doable(have, pool);
+    const kids = open && path.length < MAX_DEPTH ? treeSuggest(have, pool) : [];
+    const gain = `<div class="gain">${s.unlocked.length ? `<span class="ok">+${s.unlocked.length} faisable${s.unlocked.length > 1 ? "s" : ""}</span>` : ""}${s.n1 ? `<span title="Recettes auxquelles il ne manquerait plus qu'un ingrédient">${s.n1} presque</span>` : ""}${s.n2 ? `<span title="Recettes auxquelles il manquerait encore 2 ingrédients">${s.n2} à 2 près</span>` : ""}${!s.unlocked.length && !s.n1 && !s.n2 ? `<span>${s.cnt} recette${s.cnt > 1 ? "s" : ""}</span>` : ""}</div>`;
     const newly = s.unlocked.length ? `<div class="rtags">${rtags(s.unlocked, 3)}</div>` : "";
     const title = s.members ? nm({ nom: s.hasFlour ? "Autre farine" : "Farine", en: s.hasFlour ? "Other flour" : "Flour" }) : nm(s.i);
-    const picker = s.members ? `<div class="ftypes" role="group" aria-label="Type de farine">${s.members.map((m) => `<button class="ft${m.i.id === s.i.id ? " on" : ""}" data-ftype="${m.i.id}" data-fparent="${parentKey}" title="${m.score ? `+${m.unlocked.length} faisable(s), ${m.n1} presque` : "aucun gain direct"}">${nm(FLOUR_SHORT[m.i.id])}</button>`).join("")}</div>` : "";
-    return `<li><div class="tn${open ? " open" : ""}" data-key="${key}" role="button" tabindex="0" aria-expanded="${open}" title="${open ? "Replier" : "Voir la suite"}">
+    const picker = s.members ? `<div class="ftypes" role="group" aria-label="Type de farine">${s.members.map((m) => `<button class="ft${m.i.id === s.i.id ? " on" : ""}" data-ftype="${m.i.id}" data-fparent="${parentKey}" title="${m.unlocked.length} faisable(s), ${m.n1} presque">${nm(FLOUR_SHORT[m.i.id])}</button>`).join("")}</div>` : "";
+    return `<li><div class="tn${open ? " open" : ""}${key === treeCur ? " cur" : ""}" data-key="${key}" role="button" tabindex="0" aria-expanded="${open}" title="${open ? "Replier" : "Voir la suite"}">
         <strong>${title}</strong>${picker}${gain}${newly}
-        <div class="total">${done.length} faisable${done.length > 1 ? "s" : ""} au total</div></div>
-      ${open ? (kids.length ? `<ul>${kids.map((k) => treeChild(path, k, key)).join("")}</ul>` : `<div class="hint end">${path.length >= MAX_DEPTH ? "Profondeur maximale." : "Plus rien à débloquer ici."}</div>`) : ""}</li>`;
+        <div class="total">${done.length} faisable${done.length > 1 ? "s" : ""} sur ${pool.length} possible${pool.length > 1 ? "s" : ""}</div></div>
+      ${open ? (kids.length ? `<ul>${kids.map((k) => treeChild(path, k, key)).join("")}</ul>` : `<div class="hint end">${path.length >= MAX_DEPTH ? "Profondeur maximale." : "Chemin complet : rien à ajouter."}</div>`) : ""}</li>`;
   }
   // Pour une famille de farines, le type retenu (choix de l'utilisateur, sinon le meilleur) devient l'ingrédient du chemin.
   function treeChild(path, s, parentKey) {
@@ -521,9 +527,25 @@
     return treeNode([...path, chosen.i.id], { ...chosen, members: s.members, hasFlour: s.hasFlour }, parentKey);
   }
 
+  // Liste des recettes pour le nœud sélectionné : compatibles d'abord (faisables en tête), les autres grisées.
+  function treeList(path) {
+    const have = treeBase(path), req = treeReq(path), reqNames = req.map((k) => nm(ing(k)));
+    const rows = REC.map((r) => {
+      const ok = req.every((k) => r.ing[k] !== undefined), miss = keys(r).filter((k) => !have.has(k));
+      return { r, ok, miss, gone: req.filter((k) => r.ing[k] === undefined) };
+    }).sort((a, b) => b.ok - a.ok || (a.ok ? a.miss.length - b.miss.length : a.gone.length - b.gone.length) || nt(a.r).localeCompare(nt(b.r), lang === "en" ? "en" : "fr"));
+    const n = rows.filter((x) => x.ok).length;
+    return `<aside class="tree-list"><h3>Recettes</h3>
+      <p class="hint" style="margin:0 0 .5rem">${reqNames.length ? `Chemin : <strong>${reqNames.join(" + ")}</strong>. ` : ""}${n} compatible${n > 1 ? "s" : ""} sur ${REC.length}.</p>
+      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>
+        <span class="st">${!ok ? `sans ${gone.map((k) => nm(ing(k))).join(", ")}` : miss.length ? `manque ${miss.map((k) => nm(ing(k))).join(", ")}` : "✓ faisable"}</span></li>`).join("")}</ul></aside>`;
+  }
+
   function renderArbre() {
     const startPantry = treeRoot[0] === "pantry", flourRoot = FLOURS.includes(treeRoot[0]);
-    const have0 = treeBase([]), done0 = doable(have0), kids0 = treeSuggest(have0);
+    if (treeCur && !treeOpen.has(treeCur)) treeCur = "";
+    const have0 = treeBase([]), pool0 = treePool([]), done0 = doable(have0, pool0), kids0 = treeSuggest(have0, pool0);
+    const curPath = treeCur ? treeCur.split(">") : [];
     // Le premier nœud est lui-même un sélecteur : on part de n'importe quel ingrédient (les farines forment une famille) ou du garde-manger.
     const opts = ING.filter((x) => !FLOURS.includes(x.id)).map((x) => ({ v: x.id, t: nt(x) }));
     opts.push({ v: flourRoot ? treeRoot[0] : "farine", t: nt(FLOUR_FAMILY) });
@@ -533,38 +555,50 @@
         <button class="btn" id="treeReset">Replier tout</button>
         <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
       </div>
-      <p class="hint" style="margin:0 0 .8rem">Choisissez l'ingrédient de départ dans le premier bloc, puis touchez une suggestion pour développer l'étape suivante. Classement : recettes rendues faisables, puis « presque » faisables (1 ingrédient manquant), puis à 2 ingrédients près. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>
+      <p class="hint" style="margin:0 0 .8rem">Choisissez l'ingrédient de départ dans le premier bloc, puis touchez une suggestion pour développer l'étape suivante. Le chemin ne propose que des ingrédients présents dans une recette qui contient tout le chemin ; la liste à droite grise les recettes écartées. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>
+      <div class="tree-layout">
       <div class="tree-wrap"><div class="tree"><ul><li>
-        <div class="tn root">
+        <div class="tn root${treeCur === "" ? " cur" : ""}" data-key="">
           <span class="hint">Je pars de</span>
           <select id="rootSel" class="rootsel" aria-label="Ingrédient de départ">
             <option value="pantry"${startPantry ? " selected" : ""}>🧺 Mon garde-manger (${pantry.size})</option>
             ${opts.map((o) => `<option value="${o.v}"${!startPantry && o.v === treeRoot[0] ? " selected" : ""}>${o.t}</option>`).join("")}
           </select>
           ${flourRoot ? `<div class="ftypes" role="group" aria-label="Type de farine">${FLOURS.map((f) => `<button class="ft${treeRoot[0] === f ? " on" : ""}" data-rtype="${f}">${nm(FLOUR_SHORT[f])}</button>`).join("")}</div>` : ""}
-          <div class="total">${done0.length} faisable${done0.length > 1 ? "s" : ""}</div>${done0.length ? `<div class="rtags">${rtags(done0, 4)}</div>` : ""}
+          <div class="total">${done0.length} faisable${done0.length > 1 ? "s" : ""} sur ${pool0.length} possible${pool0.length > 1 ? "s" : ""}</div>${done0.length ? `<div class="rtags">${rtags(done0, 4)}</div>` : ""}
         </div>
-        ${kids0.length ? `<ul>${kids0.map((k) => treeChild([], k, "")).join("")}</ul>` : `<div class="hint end">Rien à débloquer avec un seul ingrédient de plus.</div>`}
-      </li></ul></div></div>`;
+        ${kids0.length ? `<ul>${kids0.map((k) => treeChild([], k, "")).join("")}</ul>` : `<div class="hint end">Rien à ajouter.</div>`}
+      </li></ul></div></div>
+      ${treeList(curPath)}</div>`;
     const saveOpen = () => store.set("treeOpen", [...treeOpen]);
-    $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
-    // Changer de type de farine à la racine garde les branches ouvertes (même chemins, autre point de départ).
+    const setCur = (k) => { treeCur = k; store.set("treeCur", k); };
+    $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); setCur(""); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
+    // Changer de type de farine à la racine garde les branches ouvertes, mais le chemin sélectionné peut devenir caduc.
     $$("#tab-arbre [data-rtype]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.rtype]; store.set("treeRoot", treeRoot); renderArbre(); }));
-    $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); saveOpen(); renderArbre(); });
+    $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); setCur(""); saveOpen(); renderArbre(); });
     $("#treeStaples").addEventListener("change", (e) => { treeStaples = e.target.checked; store.set("treeStaples", treeStaples); renderArbre(); });
     $$("#tab-arbre .tn[data-key]").forEach((el) => {
-      const toggle = () => { const k = el.dataset.key; treeOpen.has(k) ? treeOpen.delete(k) : treeOpen.add(k); saveOpen(); renderArbre(); };
-      el.addEventListener("click", (e) => { if (!e.target.closest("[data-rpick],[data-ftype]")) toggle(); });
-      el.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && !e.target.closest("[data-ftype]")) { e.preventDefault(); toggle(); } });
+      // Un clic ouvre le nœud et le sélectionne ; un clic sur le nœud déjà sélectionné le referme (la sélection remonte d'un cran).
+      const toggle = () => {
+        const k = el.dataset.key;
+        if (k === "") { setCur(""); renderArbre(); return; }
+        if (treeOpen.has(k) && treeCur === k) { treeOpen.delete(k); setCur(k.split(">").slice(0, -1).join(">")); }
+        else { treeOpen.add(k); setCur(k); }
+        saveOpen(); renderArbre();
+      };
+      el.addEventListener("click", (e) => { if (!e.target.closest("[data-rpick],[data-ftype],select,[data-rtype]")) toggle(); });
+      el.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && !e.target.closest("[data-ftype],select,[data-rtype]")) { e.preventDefault(); toggle(); } });
     });
     $$("#tab-arbre [data-rpick]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); pick(b.dataset.rpick); }));
     $$("#tab-arbre [data-ftype]").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       const parent = b.dataset.fparent, node = b.closest(".tn"), oldKey = node.dataset.key;
+      const newKey = [...oldKey.split(">").slice(0, -1), b.dataset.ftype].join(">");
       treeSel[parent] = b.dataset.ftype;
       store.set("treeSel", treeSel);
       // Si le nœud était ouvert, on ouvre aussi le même nœud avec le nouveau type.
-      if (treeOpen.has(oldKey)) { treeOpen.delete(oldKey); treeOpen.add([...oldKey.split(">").slice(0, -1), b.dataset.ftype].join(">")); saveOpen(); }
+      if (treeOpen.has(oldKey)) { treeOpen.delete(oldKey); treeOpen.add(newKey); saveOpen(); }
+      if (treeCur === oldKey) setCur(newKey);
       renderArbre();
     }));
     // L'arbre peut être plus large que l'écran : on centre la racine.
