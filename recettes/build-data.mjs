@@ -34,6 +34,14 @@ const META = { "Température": "temp", "Four": "four", "Cuisson": "cuisson" };
 const CAT = { farine: "farine", sarrasin: "farine", mais: "farine", avoine: "farine", riz_gluant: "farine", fecule: "autre", noisettes: "garniture", yaourt: "liquide", oeufs: "base", eau: "liquide", lait: "liquide", creme_fraiche: "liquide", creme_liquide: "liquide", beurre: "gras", huile: "gras", levure_chimique: "levant", levure_de_boulanger: "levant", sel: "assaisonnement", moutarde: "assaisonnement", vinaigre_ou_citron: "assaisonnement", ail: "assaisonnement", muscade: "assaisonnement", sucre: "sucre", sucre_vanille: "sucre", chocolat: "sucre", chorizo: "garniture", gruyere: "garniture", lardons: "garniture", jambon: "garniture", fromage_frais: "garniture", fruits: "garniture", chapelure: "autre" };
 // Autres appellations d'une même pâte (affichées dans la comparaison et au survol).
 const AKA = { "pate-a-choux": { nom: "chouquettes (avec sucre perlé), éclairs, profiteroles, religieuses", en: "chouquettes (with pearl sugar), éclairs, profiteroles, cream puffs" } };
+// Même ingrédient, produit différent selon la recette (affiché à côté des quantités, avec une explication par ingrédient).
+const VARIANT = {
+  "tortillas-de-mais": { mais: { nom: "masa harina", en: "masa harina" } },
+  arepas: { mais: { nom: "harina PAN", en: "harina PAN" } },
+};
+const VNOTE = {
+  mais: { nom: "deux farines différentes selon la recette : masa harina (maïs nixtamalisé) pour les tortillas, harina PAN (maïs précuit) pour les arepas. Elles ne sont pas interchangeables, et ni Maïzena ni polenta ne conviennent.", en: "two different flours depending on the recipe: masa harina (nixtamalized corn) for tortillas, harina PAN (pre-cooked cornmeal) for arepas. They are not interchangeable, and neither cornstarch nor polenta will do." },
+};
 const UNITE = { oeufs: "" };
 const ingredients = [];
 // Noms anglais, affichés via le sélecteur de langue de l'app.
@@ -57,8 +65,8 @@ for (const r of body) {
   recettes.forEach((rec, i) => { const v = parseFloat((r[i + 1] || "").replace(",", ".")); if (!isNaN(v)) rec.ing[key] = v; });
 }
 
-ingredients.forEach((i) => { i.en = EN_ING[i.id] || (console.warn("EN manquant :", i.id), i.nom); });
-recettes.forEach((r) => { if (AKA[r.id]) r.aka = AKA[r.id]; r.en = EN_REC[r.id] || (console.warn("EN manquant :", r.id), r.nom); });
+ingredients.forEach((i) => { if (VNOTE[i.id]) i.vnote = VNOTE[i.id]; i.en = EN_ING[i.id] || (console.warn("EN manquant :", i.id), i.nom); });
+recettes.forEach((r) => { if (AKA[r.id]) r.aka = AKA[r.id]; if (VARIANT[r.id]) r.variant = VARIANT[r.id]; r.en = EN_REC[r.id] || (console.warn("EN manquant :", r.id), r.nom); });
 
 writeFileSync(join(root, "recettes", "data.js"),
   "// Généré par build-data.mjs à partir de resources/*.csv — ne pas éditer à la main.\n" +

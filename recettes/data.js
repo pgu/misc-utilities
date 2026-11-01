@@ -21,8 +21,12 @@ const DONNEES = {
    "id": "mais",
    "nom": "Farine de maïs",
    "unite": "g",
-   "note": "masa harina (maïs nixtamalisé) ou harina PAN (maïs précuit), pas de Maïzena ni de polenta",
+   "note": "masa harina (tortillas) ou harina PAN (arepas), pas de Maïzena ni de polenta",
    "cat": "farine",
+   "vnote": {
+    "nom": "deux farines différentes selon la recette : masa harina (maïs nixtamalisé) pour les tortillas, harina PAN (maïs précuit) pour les arepas. Elles ne sont pas interchangeables, et ni Maïzena ni polenta ne conviennent.",
+    "en": "two different flours depending on the recipe: masa harina (nixtamalized corn) for tortillas, harina PAN (pre-cooked cornmeal) for arepas. They are not interchangeable, and neither cornstarch nor polenta will do."
+   },
    "en": "corn flour (masa harina)"
   },
   {
@@ -462,6 +466,12 @@ const DONNEES = {
    "meta": {
     "temp": "tiède",
     "cuisson": 0.5
+   },
+   "variant": {
+    "mais": {
+     "nom": "masa harina",
+     "en": "masa harina"
+    }
    },
    "en": "Corn tortillas"
   },
@@ -960,6 +970,12 @@ const DONNEES = {
    "meta": {
     "temp": "tiède",
     "cuisson": 15
+   },
+   "variant": {
+    "mais": {
+     "nom": "harina PAN",
+     "en": "harina PAN"
+    }
    },
    "en": "Arepas (Venezuelan/Colombian corn cakes)"
   },

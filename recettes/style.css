@@ -210,3 +210,10 @@ table.mx tbody tr.sel td.rn { color:var(--accent); }
 table.mx .srt { font:inherit; font-size:.7rem; line-height:1; padding:.1rem .3rem; margin-top:.15rem; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--muted); cursor:pointer; }
 table.mx .srt:hover { border-color:var(--accent); color:var(--accent); }
 table.mx .srt.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* variantes de produit (masa harina / harina PAN) */
+.var { font-size:.72em; font-weight:400; color:var(--muted); font-style:italic; }
+table.mx td .var { display:block; font-size:.66rem; line-height:1.15; font-style:normal; font-weight:600; color:var(--text); }
+.vnote { margin:.5rem 0 0; padding:.45rem .6rem; border-left:3px solid var(--warn); background:var(--accent-soft); border-radius:6px; font-size:.82rem; color:var(--text); }
+.mx-wrap + .vnote, .tree-list .vnote { font-size:.78rem; }
+.chip .var { color:inherit; opacity:.8; }

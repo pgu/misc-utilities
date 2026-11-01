@@ -16,6 +16,9 @@
   function store0(k, d) { try { const v = localStorage.getItem("recettes:" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   const nt = (x) => { const fr = x.nom; return lang === "en" ? x.en : lang === "bi" && x.en !== fr ? `${fr} · ${x.en}` : fr; };           // texte brut (SVG, <option>)
   const nm = (x) => { const fr = x.nom; return lang === "en" ? x.en : lang === "bi" && x.en !== fr ? `${fr} <small class="en">${x.en}</small>` : fr; }; // HTML
+  // Variante de produit propre à une recette (ex. masa harina / harina PAN) et note explicative de l'ingrédient.
+  const vtag = (r, id) => (r.variant && r.variant[id] ? ` <small class="var">${nm(r.variant[id])}</small>` : "");
+  const vnote = (i) => `<p class="vnote">⚠️ <strong>${nm(i)}</strong> : ${nt(i.vnote)}</p>`;
   const tip = (i) => (lang === "fr" ? [i.en, i.note].filter(Boolean).join(" — ") : i.note || "");
   const CAT_EN = { farine: "Flours", liquide: "Liquids", base: "Eggs", gras: "Fats", levant: "Leavening", assaisonnement: "Seasoning", sucre: "Sugar & chocolate", garniture: "Fillings", autre: "Other" };
   const catObj = (c) => ({ nom: CAT_LABEL[c] || c, en: CAT_EN[c] || c });
@@ -111,7 +114,7 @@
             <div style="display:flex;gap:.4rem;flex-wrap:wrap">
               <button class="btn" data-preset="base">Base</button><button class="btn" data-preset="none">Vider</button><button class="btn" data-preset="all">Tout</button>
             </div>
-            ${cats.map((c) => `<h3 style="margin-top:.8rem">${nm(catObj(c))}</h3><div class="chips">${ING.filter((i) => i.cat === c).map((i) => `<button class="chip" data-ing="${i.id}" aria-pressed="${pantry.has(i.id)}" title="${tip(i)}">${nm(i)}</button>`).join("")}</div>`).join("")}
+            ${cats.map((c) => `<h3 style="margin-top:.8rem">${nm(catObj(c))}</h3><div class="chips">${ING.filter((i) => i.cat === c).map((i) => `<button class="chip" data-ing="${i.id}" aria-pressed="${pantry.has(i.id)}" title="${tip(i)}">${nm(i)}${i.vnote ? " ⚠️" : ""}</button>`).join("")}</div>${ING.filter((i) => i.cat === c && i.vnote && pantry.has(i.id)).map(vnote).join("")}`).join("")}
           </div>
           <div class="card unlock">
             <h3>🔓 Ce qui débloque le plus</h3>
@@ -125,8 +128,8 @@
             return `<div class="rcard${m.length ? "" : " ready"}" data-rid="${r.id}">
               <h3><span>${nm(r)}</span><span class="pickbox"><span class="pct">${p} %</span>${pickBtn(r.id)}</span></h3>
               <div class="bar"><i style="width:${p}%"></i></div>
-              ${m.length ? `<div class="chips" style="margin:0">${m.map((k) => `<button class="chip miss" data-ing="${k}">+ ${nm(ing(k))}</button>`).join("")}</div>` : `<span class="chip have">✓ Tout est là</span>`}
-              <details><summary class="hint">Quantités</summary>${keys(r).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))} : ${qty(k, r.ing[k])}</div>`).join("")}</details>
+              ${m.length ? `<div class="chips" style="margin:0">${m.map((k) => `<button class="chip miss" data-ing="${k}">+ ${nm(ing(k))}${vtag(r, k)}</button>`).join("")}</div>` : `<span class="chip have">✓ Tout est là</span>`}
+              <details><summary class="hint">Quantités</summary>${keys(r).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))}${vtag(r, k)} : ${qty(k, r.ing[k])}</div>`).join("")}</details>
             </div>`;
           }).join("")}</div>
         </div>
@@ -224,7 +227,7 @@
         </div>
         <div class="card">
           <h2>${nm(selected)} ${pickBtn(selected.id)}</h2>
-          <p class="hint">${keys(selected).map((k) => `${nm(ing(k))} ${qty(k, selected.ing[k])}`).join(" · ")}</p>
+          <p class="hint">${keys(selected).map((k) => `${nm(ing(k))}${vtag(selected, k)} ${qty(k, selected.ing[k])}`).join(" · ")}</p>
           ${m.length ? `<p>Il vous manque : ${m.map((k) => `<span class="chip miss" style="cursor:default" title="${tip(ing(k))}">${nm(ing(k))}</span>`).join(" ")}</p>` : `<p><span class="chip have">✓ Faisable avec mon garde-manger</span></p>`}
           <h3>Recettes les plus proches</h3>
           ${sim.slice(0, 6).map(({ r, s }) => {
@@ -309,12 +312,13 @@
     };
     $("#tab-matrice").innerHTML = `
       <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. ⇅ trie par colonne (décroissant, croissant, ordre d'origine). Touchez un nom d'ingrédient pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai), une ligne pour la surligner, un nom de recette pour la comparer (A/B).</p>
-      <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette ${sortBtn("nom")}</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small><br>${sortBtn(i.id)}</th>`).join("")}</tr></thead>
+      ${ING.filter((i) => i.vnote && pantry.has(i.id)).map(vnote).join("")}
+      <div class="mx-wrap" style="margin-top:.6rem"><table class="mx"><thead><tr><th class="rn">Recette ${sortBtn("nom")}</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small>${i.vnote ? ' <span title="Voir la note sous le tableau">⚠️</span>' : ""}<br>${sortBtn(i.id)}</th>`).join("")}</tr></thead>
       <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)${r.aka ? " · aussi : " + nt(r.aka) : ""}">${nm(r)}</td>${ING.map((i) => {
         const v = r.ing[i.id];
         if (v === undefined) return `<td class="v"></td>`;
         const a = (0.15 + 0.7 * (v / max[i.id])).toFixed(2);
-        return `<td class="v" style="background:color-mix(in srgb, var(--accent) ${Math.round(a * 100)}%, transparent)">${v}</td>`;
+        return `<td class="v" style="background:color-mix(in srgb, var(--accent) ${Math.round(a * 100)}%, transparent)">${v}${vtag(r, i.id)}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table></div>`;
     const wrap = $("#tab-matrice .mx-wrap");
     $$("#tab-matrice th[data-ing]").forEach((th) => th.addEventListener("click", (e) => { if (!e.target.closest(".srt")) togglePantry(th.dataset.ing); }));
@@ -358,7 +362,7 @@
     if (!A || !B) {
       const one = A || B;
       body = `<div class="card"><p class="hint" style="margin:0">Choisissez <strong>deux recettes</strong> : touchez ⚖️ sur une carte, une pastille du réseau, une recette du radar ou une ligne de la matrice. Un troisième choix remplace le plus ancien.</p></div>
-        ${one ? `<div class="card"><h3><span class="slot ${A ? "a" : "b"}">${A ? "A" : "B"}</span> ${nm(one)}</h3>${keys(one).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))} : ${qty(k, one.ing[k])}</div>`).join("")}</div>` : ""}`;
+        ${one ? `<div class="card"><h3><span class="slot ${A ? "a" : "b"}">${A ? "A" : "B"}</span> ${nm(one)}</h3>${keys(one).map((k) => `<div class="hint" style="margin:0">${nm(ing(k))}${vtag(one, k)} : ${qty(k, one.ing[k])}</div>`).join("")}</div>` : ""}`;
     } else {
       const all = ING.filter((i) => A.ing[i.id] !== undefined || B.ing[i.id] !== undefined);
       const onlyA = all.filter((i) => B.ing[i.id] === undefined).map((i) => nm(i));
@@ -380,12 +384,13 @@
             const a = A.ing[i.id], b = B.ing[i.id], m = barMax(i.id);
             const d = a !== undefined && b !== undefined ? (b - a === 0 ? "=" : (b - a > 0 ? "+" : "") + +(b - a).toFixed(1)) : a === undefined ? "nouveau" : "retiré";
             return `<tr><td><span title="${tip(i)}">${nm(i)}</span>${i.unite ? ` <small class="hint">(${i.unite})</small>` : ""}</td>
-              <td>${a !== undefined ? `<div class="pair">${a}<span class="b" style="width:${Math.round((a / m) * 40)}px"></span></div>` : "—"}</td>
-              <td>${b !== undefined ? `<div class="pair">${b}<span class="b b2" style="width:${Math.round((b / m) * 40)}px"></span></div>` : "—"}</td>
+              <td>${a !== undefined ? `<div class="pair">${a}${vtag(A, i.id)}<span class="b" style="width:${Math.round((a / m) * 40)}px"></span></div>` : "—"}</td>
+              <td>${b !== undefined ? `<div class="pair">${b}${vtag(B, i.id)}<span class="b b2" style="width:${Math.round((b / m) * 40)}px"></span></div>` : "—"}</td>
               <td class="d">${d}</td></tr>`;
           }).join("")}
           ${metaRow("Four", "four", " °C")}${metaRow("Cuisson", "cuisson", " min")}${metaRow("Température de l'eau/lait", "temp", "")}
           </tbody></table></div>
+        ${all.filter((i) => i.vnote && (A.variant?.[i.id] || B.variant?.[i.id])).map(vnote).join("")}
         <div class="card"><h3>Proportions (pour 100 g de farine)</h3>
           ${rA && rB ? `<table class="cmp"><thead><tr><th></th><th style="color:var(--o1)">${nm(A)}</th><th style="color:var(--o2)">${nm(B)}</th></tr></thead><tbody>
             <tr><td>Liquide (lait + eau, ml)</td><td>${rA.liquide}</td><td>${rB.liquide}</td></tr>
@@ -573,8 +578,9 @@
     const n = rows.filter((x) => x.ok).length;
     return `<aside class="tree-list"><h3>Recettes</h3>
       <p class="hint" style="margin:0 0 .5rem">${reqNames.length ? `Chemin : <strong>${reqNames.join(" + ")}</strong>. ` : ""}${n} compatible${n > 1 ? "s" : ""} sur ${REC.length}.</p>
-      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>
-        <span class="st">${!ok ? `sans ${gone.map((k) => nm(ing(k))).join(", ")}` : miss.length ? `manque ${miss.map((k) => nm(ing(k))).join(", ")}` : "✓ faisable"}</span></li>`).join("")}</ul></aside>`;
+      ${ING.filter((i) => i.vnote && REC.some((r) => r.variant?.[i.id] && r.ing[i.id] !== undefined && req.every((k) => r.ing[k] !== undefined))).map(vnote).join("")}
+      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>${Object.keys(r.variant || {}).map((k) => vtag(r, k)).join("")}
+        <span class="st">${!ok ? `sans ${gone.map((k) => nm(ing(k))).join(", ")}` : miss.length ? `manque ${miss.map((k) => nm(ing(k)) + vtag(r, k)).join(", ")}` : "✓ faisable"}</span></li>`).join("")}</ul></aside>`;
   }
 
   function renderArbre() {
