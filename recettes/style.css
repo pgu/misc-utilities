@@ -171,7 +171,7 @@ table.mx td.rn:hover { color:var(--accent); }
 .tn[data-key] { cursor:pointer; }
 .tn[data-key]:hover { border-color:var(--accent); }
 .tn.open { border-color:var(--accent); background:var(--accent-soft); }
-.tn.root { width:230px; border:2px solid var(--accent); background:var(--accent-soft); }
+.tn.root { width:250px; border:2px solid var(--accent); background:var(--accent-soft); }
 .tn strong { display:block; font-size:.98rem; }
 .tn .gain { display:flex; flex-wrap:wrap; justify-content:center; gap:.2rem .4rem; font-size:.75rem; color:var(--muted); margin:.2rem 0; }
 .tn .gain .ok { color:var(--ok); font-weight:700; }
@@ -184,3 +184,5 @@ table.mx td.rn:hover { color:var(--accent); }
 .ft { font:inherit; font-size:.72rem; padding:.05rem .45rem; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--text); cursor:pointer; }
 .ft:hover { border-color:var(--accent); }
 .ft.on { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+.rootsel { font:inherit; font-weight:600; font-size:1rem; width:100%; margin:.25rem 0 .2rem; padding:.35rem .5rem; border:1px solid var(--accent); border-radius:8px; background:var(--card); color:var(--text); }
+.tn.root .ftypes { margin:.2rem 0 .3rem; }

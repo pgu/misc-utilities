@@ -524,34 +524,30 @@
   function renderArbre() {
     const startPantry = treeRoot[0] === "pantry", flourRoot = FLOURS.includes(treeRoot[0]);
     const have0 = treeBase([]), done0 = doable(have0), kids0 = treeSuggest(have0);
-    const rootTitle = startPantry ? `Mon garde-manger <small>(${pantry.size} ingrédient${pantry.size > 1 ? "s" : ""})</small>` : nm(ing(treeRoot[0]));
-    let flourDone = false;
-    const rootChips = ING.map((i) => {
-      if (FLOURS.includes(i.id)) {
-        if (flourDone) return "";
-        flourDone = true;
-        return `<button class="chip" data-root="farine" aria-pressed="${flourRoot}" title="Choisir ensuite le type : blé, sarrasin, maïs, avoine">${nm(FLOUR_FAMILY)} ▾</button>`;
-      }
-      return `<button class="chip" data-root="${i.id}" aria-pressed="${treeRoot[0] === i.id}" title="${tip(i)}">${nm(i)}</button>`;
-    }).join("");
+    // Le premier nœud est lui-même un sélecteur : on part de n'importe quel ingrédient (les farines forment une famille) ou du garde-manger.
+    const opts = ING.filter((x) => !FLOURS.includes(x.id)).map((x) => ({ v: x.id, t: nt(x) }));
+    opts.push({ v: flourRoot ? treeRoot[0] : "farine", t: nt(FLOUR_FAMILY) });
+    opts.sort((x, y) => x.t.localeCompare(y.t, lang === "en" ? "en" : "fr"));
     $("#tab-arbre").innerHTML = `
-      <div class="card">
-        <h3>Ingrédient de départ</h3>
-        <div class="chips">${rootChips}</div>
-        ${flourRoot ? `<div class="chips" role="group" aria-label="Type de farine"><span class="hint" style="align-self:center">Type de farine :</span>${FLOURS.map((f) => `<button class="chip" data-rtype="${f}" aria-pressed="${treeRoot[0] === f}">${nm(FLOUR_SHORT[f])}</button>`).join("")}</div>` : ""}
-        <div class="ctl" style="margin:0">
-          <button class="btn" data-root="pantry" ${startPantry ? 'style="border-color:var(--accent)"' : ""}>🧺 Partir de mon garde-manger</button>
-          <button class="btn" id="treeReset">Replier tout</button>
-          <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
-        </div>
-        <p class="hint" style="margin:.5rem 0 0">Touchez une suggestion pour développer l'étape suivante. Les suggestions sont classées par recettes rendues faisables, puis par recettes « presque » faisables (1 ingrédient manquant), puis à 2 ingrédients près. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>
+      <div class="ctl" style="margin-bottom:.8rem">
+        <button class="btn" id="treeReset">Replier tout</button>
+        <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
       </div>
+      <p class="hint" style="margin:0 0 .8rem">Choisissez l'ingrédient de départ dans le premier bloc, puis touchez une suggestion pour développer l'étape suivante. Classement : recettes rendues faisables, puis « presque » faisables (1 ingrédient manquant), puis à 2 ingrédients près. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>
       <div class="tree-wrap"><div class="tree"><ul><li>
-        <div class="tn root"><strong>${rootTitle}</strong><div class="total">${done0.length} faisable${done0.length > 1 ? "s" : ""}</div>${done0.length ? `<div class="rtags">${rtags(done0, 4)}</div>` : ""}</div>
+        <div class="tn root">
+          <span class="hint">Je pars de</span>
+          <select id="rootSel" class="rootsel" aria-label="Ingrédient de départ">
+            <option value="pantry"${startPantry ? " selected" : ""}>🧺 Mon garde-manger (${pantry.size})</option>
+            ${opts.map((o) => `<option value="${o.v}"${!startPantry && o.v === treeRoot[0] ? " selected" : ""}>${o.t}</option>`).join("")}
+          </select>
+          ${flourRoot ? `<div class="ftypes" role="group" aria-label="Type de farine">${FLOURS.map((f) => `<button class="ft${treeRoot[0] === f ? " on" : ""}" data-rtype="${f}">${nm(FLOUR_SHORT[f])}</button>`).join("")}</div>` : ""}
+          <div class="total">${done0.length} faisable${done0.length > 1 ? "s" : ""}</div>${done0.length ? `<div class="rtags">${rtags(done0, 4)}</div>` : ""}
+        </div>
         ${kids0.length ? `<ul>${kids0.map((k) => treeChild([], k, "")).join("")}</ul>` : `<div class="hint end">Rien à débloquer avec un seul ingrédient de plus.</div>`}
       </li></ul></div></div>`;
     const saveOpen = () => store.set("treeOpen", [...treeOpen]);
-    $$("#tab-arbre [data-root]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.root]; treeOpen = new Set(); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); }));
+    $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
     // Changer de type de farine à la racine garde les branches ouvertes (même chemins, autre point de départ).
     $$("#tab-arbre [data-rtype]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.rtype]; store.set("treeRoot", treeRoot); renderArbre(); }));
     $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); saveOpen(); renderArbre(); });
