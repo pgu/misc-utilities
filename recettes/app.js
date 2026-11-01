@@ -463,8 +463,88 @@
     markPair();
   }
 
+  // ---------- arbre : quels ingrédients ajouter ensuite ? ----------
+  // Un nœud = un ensemble d'ingrédients (racine + chemin). Ses enfants = les 3 ingrédients qui rapprochent le plus de recettes :
+  // d'abord celles qui deviennent faisables, puis celles à 1 ingrédient manquant, puis à 2.
+  const STAPLES = ["sel", "eau"];
+  let treeRoot = store.get("treeRoot", ["farine"]);        // ["pantry"] = partir du garde-manger
+  let treeOpen = new Set(store.get("treeOpen", []));
+  let treeStaples = store.get("treeStaples", true);
+  const MAX_DEPTH = 8;
+
+  const treeBase = (path) => {
+    const s = new Set(treeRoot[0] === "pantry" ? [...pantry] : treeRoot);
+    path.forEach((k) => s.add(k));
+    if (treeStaples) STAPLES.forEach((k) => s.add(k));
+    return s;
+  };
+  const doable = (have) => REC.filter((r) => keys(r).every((k) => have.has(k)));
+  function treeSuggest(have) {
+    const out = [];
+    for (const i of ING) {
+      if (have.has(i.id)) continue;
+      const unlocked = []; let n1 = 0, n2 = 0;
+      for (const r of REC) {
+        if (r.ing[i.id] === undefined) continue;
+        const after = keys(r).filter((k) => !have.has(k)).length - 1;
+        if (after === 0) unlocked.push(r); else if (after === 1) n1++; else if (after === 2) n2++;
+      }
+      const score = unlocked.length * 10000 + n1 * 100 + n2;
+      if (score > 0) out.push({ i, unlocked, n1, n2, score });
+    }
+    return out.sort((a, b) => b.score - a.score).slice(0, 3);
+  }
+  const rtags = (list, max = 4) => list.slice(0, max).map((r) => `<button class="rtag" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>`).join("") + (list.length > max ? `<span class="hint"> +${list.length - max}</span>` : "");
+
+  function treeNode(path, sug) {
+    const key = path.join(">"), open = treeOpen.has(key), have = treeBase(path), done = doable(have);
+    const kids = open && path.length < MAX_DEPTH ? treeSuggest(have) : [];
+    const gain = sug ? `<div class="gain">${sug.unlocked.length ? `<span class="ok">+${sug.unlocked.length} faisable${sug.unlocked.length > 1 ? "s" : ""}</span>` : ""}${sug.n1 ? `<span title="Recettes auxquelles il ne manquerait plus qu'un ingrédient">${sug.n1} presque</span>` : ""}${sug.n2 ? `<span title="Recettes auxquelles il manquerait encore 2 ingrédients">${sug.n2} à 2 près</span>` : ""}</div>` : "";
+    const newly = sug && sug.unlocked.length ? `<div class="rtags">${rtags(sug.unlocked, 3)}</div>` : "";
+    const last = path[path.length - 1];
+    return `<li><div class="tn${open ? " open" : ""}" data-key="${key}" role="button" tabindex="0" aria-expanded="${open}" title="${open ? "Replier" : "Voir la suite"}">
+        <strong>${nm(ing(last))}</strong>${gain}${newly}
+        <div class="total">${done.length} faisable${done.length > 1 ? "s" : ""} au total</div></div>
+      ${open ? (kids.length ? `<ul>${kids.map((s) => treeNode([...path, s.i.id], s)).join("")}</ul>` : `<div class="hint end">${path.length >= MAX_DEPTH ? "Profondeur maximale." : "Plus rien à débloquer ici."}</div>`) : ""}</li>`;
+  }
+
+  function renderArbre() {
+    const startPantry = treeRoot[0] === "pantry";
+    const have0 = treeBase([]), done0 = doable(have0), kids0 = treeSuggest(have0);
+    const rootTitle = startPantry ? `Mon garde-manger <small>(${pantry.size} ingrédient${pantry.size > 1 ? "s" : ""})</small>` : nm(ing(treeRoot[0]));
+    $("#tab-arbre").innerHTML = `
+      <div class="card">
+        <h3>Ingrédient de départ</h3>
+        <div class="chips">${ING.map((i) => `<button class="chip" data-root="${i.id}" aria-pressed="${!startPantry && treeRoot[0] === i.id}" title="${tip(i)}">${nm(i)}</button>`).join("")}</div>
+        <div class="ctl" style="margin:0">
+          <button class="btn" data-root="pantry" ${startPantry ? 'style="border-color:var(--accent)"' : ""}>🧺 Partir de mon garde-manger</button>
+          <button class="btn" id="treeReset">Replier tout</button>
+          <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
+        </div>
+        <p class="hint" style="margin:.5rem 0 0">Touchez une suggestion pour développer l'étape suivante. Les suggestions sont classées par recettes rendues faisables, puis par recettes « presque » faisables (1 ingrédient manquant), puis à 2 ingrédients près.</p>
+      </div>
+      <div class="tree-wrap"><div class="tree"><ul><li>
+        <div class="tn root"><strong>${rootTitle}</strong><div class="total">${done0.length} faisable${done0.length > 1 ? "s" : ""}</div>${done0.length ? `<div class="rtags">${rtags(done0, 4)}</div>` : ""}</div>
+        ${kids0.length ? `<ul>${kids0.map((s) => treeNode([s.i.id], s)).join("")}</ul>` : `<div class="hint end">Rien à débloquer avec un seul ingrédient de plus.</div>`}
+      </li></ul></div></div>`;
+    const saveOpen = () => store.set("treeOpen", [...treeOpen]);
+    $$("#tab-arbre [data-root]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.root]; treeOpen = new Set(); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); }));
+    $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); saveOpen(); renderArbre(); });
+    $("#treeStaples").addEventListener("change", (e) => { treeStaples = e.target.checked; store.set("treeStaples", treeStaples); renderArbre(); });
+    $$("#tab-arbre .tn[data-key]").forEach((el) => {
+      const toggle = () => { const k = el.dataset.key; treeOpen.has(k) ? treeOpen.delete(k) : treeOpen.add(k); saveOpen(); renderArbre(); };
+      el.addEventListener("click", (e) => { if (!e.target.closest("[data-rpick]")) toggle(); });
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    });
+    $$("#tab-arbre [data-rpick]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); pick(b.dataset.rpick); }));
+    // L'arbre peut être plus large que l'écran : on centre la racine.
+    const wrap = $("#tab-arbre .tree-wrap"), root = $("#tab-arbre .tn.root");
+    if (wrap && root && !wrap.hidden && wrap.clientWidth) wrap.scrollLeft = root.offsetLeft + root.offsetWidth / 2 - wrap.clientWidth / 2;
+    markPair();
+  }
+
   // ---------- langue ----------
-  function renderAll() { renderPlacard(); renderReseau(); renderMatrice(); renderComparer(); renderRadar(); }
+  function renderAll() { renderPlacard(); renderReseau(); renderArbre(); renderMatrice(); renderComparer(); renderRadar(); }
   function syncLang() { $$("#lang [data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang))); document.documentElement.dataset.lang = lang; }
   $$("#lang [data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("lang", lang); syncLang(); renderAll(); }));
 
@@ -474,12 +554,14 @@
     $$(".panel").forEach((p) => (p.hidden = p.id !== "tab-" + name));
     store.set("tab", name);
     if (name === "reseau") renderReseau(); // l'onglet doit être visible pour mesurer le SVG
+    if (name === "arbre") renderArbre(); // le garde-manger a pu changer entre-temps
     if (name === "radar") renderRadar(); // la paire A/B a pu changer entre-temps
   }
   $$(".tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
   syncLang();
   renderPlacard();
+  renderArbre();
   renderMatrice();
   renderComparer();
   renderRadar();
