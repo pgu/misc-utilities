@@ -180,3 +180,7 @@ table.mx td.rn:hover { color:var(--accent); }
 .rtag { font:inherit; font-size:.72rem; padding:.05rem .45rem; border:1px solid var(--ok); border-radius:999px; background:var(--ok-soft); color:var(--ok); cursor:pointer; }
 .rtag.pa { background:var(--o1); border-color:var(--o1); color:#fff; } .rtag.pb { background:var(--o2); border-color:var(--o2); color:#fff; }
 .tree .end { margin-top:.6rem; font-size:.78rem; }
+.ftypes { display:flex; flex-wrap:wrap; justify-content:center; gap:.2rem; margin:.3rem 0 .1rem; }
+.ft { font:inherit; font-size:.72rem; padding:.05rem .45rem; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--text); cursor:pointer; }
+.ft:hover { border-color:var(--accent); }
+.ft.on { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
