@@ -372,13 +372,13 @@
   // Chaque axe = part de la masse totale de la recette. Facteurs de conversion en grammes.
   const ALL_AXES = [
     { id: "farine", nom: "Farines", en: "Flours", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
-    { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125, creme_fraiche: 1.0 } },
+    { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125, creme_fraiche: 1.0, creme_liquide: 1.0 } },
     { id: "oeufs", nom: "Œufs", en: "Eggs", parts: { oeufs: 55 } },
     { id: "gras", nom: "Matières grasses", en: "Fats", parts: { beurre: 1, huile: 0.92 } },
     { id: "sucre", nom: "Sucres", en: "Sugars", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
-    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, lardons: 1, gruyere: 1, fruits: 1 } },
+    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, lardons: 1, jambon: 1, fromage_frais: 1, gruyere: 1, fruits: 1 } },
   ];
-  const OTHER = { levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
+  const OTHER = { chapelure: 1, levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
   // Deux modes : « total » (toute la masse) ou « sec » (sans les liquides, pour comparer les pâtes indépendamment de leur hydratation).
   let radarMode = store.get("radarMode", "total");
   let AXES = ALL_AXES;

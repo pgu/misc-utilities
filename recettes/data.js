@@ -74,6 +74,22 @@ const DONNEES = {
    "en": "crème fraîche (sour cream)"
   },
   {
+   "id": "fromage_frais",
+   "nom": "Fromage frais",
+   "unite": "g",
+   "note": "type Philadelphia, St Môret",
+   "cat": "garniture",
+   "en": "cream cheese"
+  },
+  {
+   "id": "creme_liquide",
+   "nom": "Crème liquide",
+   "unite": "ml",
+   "note": "entière, 30 % MG",
+   "cat": "liquide",
+   "en": "heavy cream"
+  },
+  {
    "id": "beurre",
    "nom": "Beurre",
    "unite": "g",
@@ -154,6 +170,14 @@ const DONNEES = {
    "en": "bacon lardons"
   },
   {
+   "id": "jambon",
+   "nom": "Jambon",
+   "unite": "g",
+   "note": "jambon blanc ou serrano",
+   "cat": "garniture",
+   "en": "ham"
+  },
+  {
    "id": "gruyere",
    "nom": "Gruyère",
    "unite": "g",
@@ -168,6 +192,14 @@ const DONNEES = {
    "note": "cerises, pruneaux…",
    "cat": "garniture",
    "en": "fruit"
+  },
+  {
+   "id": "chapelure",
+   "nom": "Chapelure",
+   "unite": "g",
+   "note": "",
+   "cat": "autre",
+   "en": "breadcrumbs"
   },
   {
    "id": "moutarde",
@@ -821,6 +853,72 @@ const DONNEES = {
    },
    "meta": {},
    "en": "Cream sauce"
+  },
+  {
+   "id": "cheesecake-basque",
+   "nom": "Cheesecake basque",
+   "ing": {
+    "farine": 25,
+    "oeufs": 6,
+    "fromage_frais": 800,
+    "creme_liquide": 400,
+    "sel": 1,
+    "sucre": 300
+   },
+   "meta": {
+    "four": 220,
+    "cuisson": 40
+   },
+   "en": "Basque cheesecake (tarta de queso)"
+  },
+  {
+   "id": "flan-aux-oeufs",
+   "nom": "Flan aux œufs",
+   "ing": {
+    "oeufs": 4,
+    "lait": 500,
+    "sucre": 120,
+    "sucre_vanille": 1
+   },
+   "meta": {
+    "four": 160,
+    "cuisson": 45
+   },
+   "en": "Egg flan (flan de huevos)"
+  },
+  {
+   "id": "flan-au-fromage",
+   "nom": "Flan au fromage",
+   "ing": {
+    "oeufs": 4,
+    "lait": 400,
+    "fromage_frais": 250,
+    "sucre": 150
+   },
+   "meta": {
+    "four": 160,
+    "cuisson": 50
+   },
+   "en": "Cheese flan (flan de queso)"
+  },
+  {
+   "id": "croquettes-au-jambon",
+   "nom": "Croquettes au jambon",
+   "ing": {
+    "farine": 100,
+    "oeufs": 2,
+    "lait": 700,
+    "beurre": 80,
+    "huile": 500,
+    "sel": 3,
+    "jambon": 100,
+    "chapelure": 100,
+    "muscade": 1
+   },
+   "meta": {
+    "cuisson": 3
+   },
+   "en": "Ham croquettes (croquetas de jamón)"
   }
  ]
 };
