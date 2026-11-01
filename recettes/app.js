@@ -10,7 +10,7 @@
   const rec = (id) => REC.find((r) => r.id === id);
   const keys = (r) => Object.keys(r.ing);
   const qty = (id, q) => { const i = ing(id); return `${q}${i.unite ? " " + i.unite : ""}`; };
-  const FARINES = ["farine", "sarrasin", "mais", "avoine"];
+  const FARINES = ["farine", "sarrasin", "mais", "avoine", "riz_gluant"];
   // Langue d'affichage des noms : fr | bi (français + anglais) | en
   let lang = store0("lang", "fr");
   function store0(k, d) { try { const v = localStorage.getItem("recettes:" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -310,7 +310,7 @@
     $("#tab-matrice").innerHTML = `
       <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. ⇅ trie par colonne (décroissant, croissant, ordre d'origine). Touchez un nom d'ingrédient pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai), une ligne pour la surligner, un nom de recette pour la comparer (A/B).</p>
       <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette ${sortBtn("nom")}</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small><br>${sortBtn(i.id)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)">${nm(r)}</td>${ING.map((i) => {
+      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)${r.aka ? " · aussi : " + nt(r.aka) : ""}">${nm(r)}</td>${ING.map((i) => {
         const v = r.ing[i.id];
         if (v === undefined) return `<td class="v"></td>`;
         const a = (0.15 + 0.7 * (v / max[i.id])).toFixed(2);
@@ -371,6 +371,7 @@
       const barMax = (id) => Math.max(A.ing[id] || 0, B.ing[id] || 0) || 1;
       body = `
         <p><span class="chip have" style="cursor:default">Similarité ${s} %</span></p>
+        ${[A, B].filter((x) => x.aka).map((x) => `<p class="hint" style="margin:.2rem 0"><strong>${nm(x)}</strong> : aussi ${nt(x.aka)}.</p>`).join("")}
         <div class="diffnote"><strong>${nm(B)}</strong> par rapport à <strong>${nm(A)}</strong> :
           ${onlyB.length ? `ajoute <strong>${onlyB.join(", ")}</strong>` : "n'ajoute aucun ingrédient"}${onlyA.length ? `, retire <strong>${onlyA.join(", ")}</strong>` : ""}${diffq.length ? `, et change les quantités de ${diffq.join(", ")}` : ""}.</div>
         <div class="card" style="overflow-x:auto"><table class="cmp">
@@ -406,14 +407,14 @@
   // ---------- radar ----------
   // Chaque axe = part de la masse totale de la recette. Facteurs de conversion en grammes.
   const ALL_AXES = [
-    { id: "farine", nom: "Farines", en: "Flours", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1 } },
+    { id: "farine", nom: "Farines", en: "Flours", parts: { farine: 1, sarrasin: 1, mais: 1, avoine: 1, riz_gluant: 1 } },
     { id: "liquide", nom: "Liquides", en: "Liquids", parts: { lait: 1.03, eau: 1, yaourt: 125, creme_fraiche: 1.0, creme_liquide: 1.0 } },
     { id: "oeufs", nom: "Œufs", en: "Eggs", parts: { oeufs: 55 } },
     { id: "gras", nom: "Matières grasses", en: "Fats", parts: { beurre: 1, huile: 0.92 } },
     { id: "sucre", nom: "Sucres", en: "Sugars", parts: { sucre: 1, sucre_vanille: 7.5, chocolat: 1 } },
-    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, lardons: 1, jambon: 1, fromage_frais: 1, gruyere: 1, fruits: 1 } },
+    { id: "garniture", nom: "Garnitures", en: "Fillings", parts: { chorizo: 1, noisettes: 1, lardons: 1, jambon: 1, fromage_frais: 1, gruyere: 1, fruits: 1 } },
   ];
-  const OTHER = { chapelure: 1, levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
+  const OTHER = { chapelure: 1, fecule: 1, levure_chimique: 11, levure_de_boulanger: 7, sel: 1, moutarde: 15, vinaigre_ou_citron: 15, ail: 4, muscade: 0.3 }; // comptés dans la masse totale, sans axe
   // Deux modes : « total » (toute la masse) ou « sec » (sans les liquides, pour comparer les pâtes indépendamment de leur hydratation).
   let radarMode = store.get("radarMode", "total");
   let AXES = ALL_AXES;
@@ -505,8 +506,8 @@
   // Les farines forment une famille : un seul bloc « Farine » dont on choisit le type, chaque type ouvrant son propre sous-arbre.
   // À droite, la liste des recettes suit le nœud sélectionné : celles qui ne contiennent plus tout le chemin sont grisées.
   const STAPLES = ["sel", "eau"];
-  const FLOURS = ["farine", "sarrasin", "mais", "avoine"];
-  const FLOUR_SHORT = { farine: { nom: "blé", en: "wheat" }, sarrasin: { nom: "sarrasin", en: "buckwheat" }, mais: { nom: "maïs", en: "corn" }, avoine: { nom: "avoine", en: "oats" } };
+  const FLOURS = ["farine", "sarrasin", "mais", "avoine", "riz_gluant"];
+  const FLOUR_SHORT = { farine: { nom: "blé", en: "wheat" }, sarrasin: { nom: "sarrasin", en: "buckwheat" }, mais: { nom: "maïs", en: "corn" }, avoine: { nom: "avoine", en: "oats" }, riz_gluant: { nom: "riz gluant", en: "glutinous rice" } };
   const FLOUR_FAMILY = { nom: "Farine", en: "Flour" };
   let treeRoot = store.get("treeRoot", ["farine"]);        // ["pantry"] = partir du garde-manger
   let treeOpen = new Set(store.get("treeOpen", []));

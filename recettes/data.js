@@ -21,9 +21,17 @@ const DONNEES = {
    "id": "mais",
    "nom": "Farine de maïs",
    "unite": "g",
-   "note": "masa harina (maïs nixtamalisé), pas de Maïzena ni de polenta",
+   "note": "masa harina (maïs nixtamalisé) ou harina PAN (maïs précuit), pas de Maïzena ni de polenta",
    "cat": "farine",
    "en": "corn flour (masa harina)"
+  },
+  {
+   "id": "riz_gluant",
+   "nom": "Farine de riz gluant",
+   "unite": "g",
+   "note": "mochiko / shiratamako",
+   "cat": "farine",
+   "en": "glutinous rice flour (mochiko)"
   },
   {
    "id": "avoine",
@@ -32,6 +40,14 @@ const DONNEES = {
    "note": "",
    "cat": "farine",
    "en": "oats"
+  },
+  {
+   "id": "fecule",
+   "nom": "Fécule",
+   "unite": "g",
+   "note": "maïzena ou fécule de pomme de terre",
+   "cat": "autre",
+   "en": "starch (cornstarch or potato starch)"
   },
   {
    "id": "yaourt",
@@ -192,6 +208,14 @@ const DONNEES = {
    "note": "cerises, pruneaux…",
    "cat": "garniture",
    "en": "fruit"
+  },
+  {
+   "id": "noisettes",
+   "nom": "Noisettes",
+   "unite": "g",
+   "note": "",
+   "cat": "garniture",
+   "en": "hazelnuts"
   },
   {
    "id": "chapelure",
@@ -545,6 +569,10 @@ const DONNEES = {
    "meta": {
     "four": 200,
     "cuisson": 30
+   },
+   "aka": {
+    "nom": "chouquettes (avec sucre perlé), éclairs, profiteroles, religieuses",
+    "en": "chouquettes (with pearl sugar), éclairs, profiteroles, cream puffs"
    },
    "en": "Choux pastry"
   },
@@ -919,6 +947,63 @@ const DONNEES = {
     "cuisson": 3
    },
    "en": "Ham croquettes (croquetas de jamón)"
+  },
+  {
+   "id": "arepas",
+   "nom": "Arepas",
+   "ing": {
+    "mais": 250,
+    "eau": 375,
+    "huile": 15,
+    "sel": 3
+   },
+   "meta": {
+    "temp": "tiède",
+    "cuisson": 15
+   },
+   "en": "Arepas (Venezuelan/Colombian corn cakes)"
+  },
+  {
+   "id": "mochis",
+   "nom": "Mochis",
+   "ing": {
+    "riz_gluant": 100,
+    "fecule": 20,
+    "eau": 120,
+    "sucre": 30
+   },
+   "meta": {
+    "cuisson": 3
+   },
+   "en": "Mochi (Japanese rice cakes)"
+  },
+  {
+   "id": "mousse-au-chocolat",
+   "nom": "Mousse au chocolat",
+   "ing": {
+    "oeufs": 6,
+    "sel": 1,
+    "sucre": 30,
+    "chocolat": 200
+   },
+   "meta": {},
+   "en": "Chocolate mousse"
+  },
+  {
+   "id": "pate-a-tartiner",
+   "nom": "Pâte à tartiner",
+   "ing": {
+    "lait": 100,
+    "huile": 30,
+    "sel": 1,
+    "sucre": 100,
+    "chocolat": 150,
+    "noisettes": 250
+   },
+   "meta": {
+    "cuisson": 15
+   },
+   "en": "Chocolate-hazelnut spread (homemade Nutella)"
   }
  ]
 };
