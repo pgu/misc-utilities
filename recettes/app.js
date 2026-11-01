@@ -520,6 +520,9 @@
   let treeStaples = store.get("treeStaples", true);
   let treeCur = store.get("treeCur", "");                  // clé du nœud sélectionné ("" = racine)
   const MAX_DEPTH = 8;
+  let treeTarget = store.get("treeTarget", null);          // recette visée : l'arbre ne propose alors que ses ingrédients
+  const treeTgt = () => (treeTarget ? rec(treeTarget) : null);
+  let treeFocus = false;   // après « viser une recette » : amener le dernier nœud du chemin à l'écran
   let treeCenter = true;   // centrer la racine seulement à l'affichage initial et quand on change de départ ; sinon on garde le défilement
 
   const treeBase = (path) => {
@@ -542,11 +545,36 @@
     return { i, unlocked, n1, n2, cnt, score: unlocked.length * 10000 + n1 * 100 + n2 + cnt / 1000 };
   }
   function treeSuggest(have, pool) {
-    const cands = ING.filter((i) => !have.has(i.id)).map((i) => gainOf(i, have, pool)).filter((c) => c.cnt > 0);
+    const T = treeTgt();
+    const cands = ING.filter((i) => !have.has(i.id) && (!T || T.ing[i.id] !== undefined)).map((i) => gainOf(i, have, pool)).filter((c) => c.cnt > 0);
     const flours = cands.filter((c) => FLOURS.includes(c.i.id)).sort((a, b) => b.score - a.score);
     const out = cands.filter((c) => !FLOURS.includes(c.i.id));
     if (flours.length) out.push({ ...flours[0], best: flours[0], members: [...flours].sort((a, b) => FLOURS.indexOf(a.i.id) - FLOURS.indexOf(b.i.id)), hasFlour: FLOURS.some((f) => have.has(f)) });
-    return out.sort((a, b) => b.score - a.score).slice(0, 3);
+    out.sort((a, b) => b.score - a.score);
+    return T ? out : out.slice(0, 3);   // avec une cible, on montre tout ce qu'il reste à ajouter
+  }
+
+  // Viser une recette : garde le départ s'il en fait partie (sinon prend son ingrédient le plus rare), puis ouvre le chemin
+  // en ajoutant à chaque étape l'ingrédient restant qui garde le plus de recettes en jeu.
+  function treeAim(id) {
+    const R = rec(id);
+    if (!R) { treeTarget = null; treeOpen = new Set(); treeCur = ""; return; }
+    treeTarget = id; treeSel = {};
+    if (treeRoot[0] !== "pantry" && R.ing[treeRoot[0]] === undefined) {
+      const rare = keys(R).filter((k) => !STAPLES.includes(k)).sort((a, b) => REC.filter((r) => r.ing[a] !== undefined).length - REC.filter((r) => r.ing[b] !== undefined).length);
+      treeRoot = [rare[0] || keys(R)[0]];
+    }
+    const path = [], open = new Set();
+    for (let guard = 0; guard < 20; guard++) {
+      const have = treeBase(path);
+      if (keys(R).every((k) => have.has(k))) break;
+      const next = treeSuggest(have, treePool(path))[0];
+      if (!next) break;
+      path.push(next.members ? next.best.i.id : next.i.id);
+      open.add(path.join(">"));
+    }
+    treeOpen = open; treeCur = path.join(">"); treeCenter = true; treeFocus = true;
+    store.set("treeRoot", treeRoot); store.set("treeSel", treeSel); store.set("treeOpen", [...treeOpen]); store.set("treeCur", treeCur);
   }
   const rtags = (list, max = 4) => list.slice(0, max).map((r) => `<button class="rtag" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>`).join("") + (list.length > max ? `<span class="hint"> +${list.length - max}</span>` : "");
 
@@ -580,7 +608,7 @@
     return `<aside class="tree-list"><h3>Recettes</h3>
       <p class="hint" style="margin:0 0 .5rem">${reqNames.length ? `Chemin : <strong>${reqNames.join(" + ")}</strong>. ` : ""}${n} compatible${n > 1 ? "s" : ""} sur ${REC.length}.</p>
       ${ING.filter((i) => i.vnote && REC.some((r) => r.variant?.[i.id] && r.ing[i.id] !== undefined && req.every((k) => r.ing[k] !== undefined))).map(vnote).join("")}
-      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>${Object.keys(r.variant || {}).map((k) => vtag(r, k)).join("")}
+      <ul>${rows.map(({ r, ok, miss, gone }) => `<li class="${ok ? (miss.length ? "near" : "done") : "off"}${r.id === treeTarget ? " tgt" : ""}"><button class="rl" data-rid="${r.id}" data-rpick="${r.id}" title="Comparer (A/B)">${nm(r)}</button>${Object.keys(r.variant || {}).map((k) => vtag(r, k)).join("")}
         <span class="st">${!ok ? `sans ${gone.map((k) => nm(ing(k))).join(", ")}` : miss.length ? `manque ${miss.map((k) => nm(ing(k)) + vtag(r, k)).join(", ")}` : "✓ faisable"}</span></li>`).join("")}</ul></aside>`;
   }
 
@@ -588,6 +616,9 @@
     const oldWrap = $("#tab-arbre .tree-wrap"), keep = oldWrap && oldWrap.clientWidth ? { x: oldWrap.scrollLeft, y: oldWrap.scrollTop, page: window.scrollY } : null;
     const startPantry = treeRoot[0] === "pantry", flourRoot = FLOURS.includes(treeRoot[0]);
     if (treeCur && !treeOpen.has(treeCur)) treeCur = "";
+    // Une cible n'a de sens que si le départ en fait partie.
+    if (treeTarget && (!treeTgt() || (treeRoot[0] !== "pantry" && treeTgt().ing[treeRoot[0]] === undefined))) { treeTarget = null; store.set("treeTarget", null); }
+    const T = treeTgt(), curHave = treeBase(treeCur ? treeCur.split(">") : []), left = T ? keys(T).filter((k) => !curHave.has(k)) : [];
     const have0 = treeBase([]), pool0 = treePool([]), done0 = doable(have0, pool0), kids0 = treeSuggest(have0, pool0);
     const curPath = treeCur ? treeCur.split(">") : [];
     // Le premier nœud est lui-même un sélecteur : on part de n'importe quel ingrédient (les farines forment une famille) ou du garde-manger.
@@ -598,7 +629,9 @@
       <div class="ctl" style="margin-bottom:.8rem">
         <button class="btn" id="treeReset">Replier tout</button>
         <label><input type="checkbox" id="treeStaples" ${treeStaples ? "checked" : ""}> Sel et eau toujours disponibles</label>
+        <label>🎯 Viser une recette <select id="treeTarget"><option value="">— aucune —</option>${[...REC].sort((a, b) => nt(a).localeCompare(nt(b), lang === "en" ? "en" : "fr")).map((r) => `<option value="${r.id}"${r.id === treeTarget ? " selected" : ""}>${nt(r)}</option>`).join("")}</select></label>
       </div>
+      ${T ? `<p class="aim">🎯 <strong>${nm(T)}</strong> : il ${left.length ? `reste à ajouter <strong>${left.map((k) => nm(ing(k)) + vtag(T, k)).join(", ")}</strong>.` : "ne manque rien, elle est faisable."} Le chemin est ouvert ; l'arbre ne propose plus que ses ingrédients.</p>` : ""}
       <p class="hint" style="margin:0 0 .8rem">Choisissez l'ingrédient de départ dans le premier bloc, puis touchez une suggestion pour développer l'étape suivante. Le chemin ne propose que des ingrédients présents dans une recette qui contient tout le chemin ; la liste à droite grise les recettes écartées. Dans un bloc « Farine », choisissez le type : chaque type ouvre un sous-arbre différent.</p>
       <div class="tree-layout">
       <div class="tree-wrap"><div class="tree"><ul><li>
@@ -616,6 +649,10 @@
       ${treeList(curPath)}</div>`;
     const saveOpen = () => store.set("treeOpen", [...treeOpen]);
     const setCur = (k) => { treeCur = k; store.set("treeCur", k); };
+    $("#treeTarget").addEventListener("change", (e) => {
+      if (e.target.value) treeAim(e.target.value); else { treeTarget = null; treeOpen = new Set(); treeCur = ""; store.set("treeOpen", []); store.set("treeCur", ""); }
+      store.set("treeTarget", treeTarget); renderArbre();
+    });
     $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); treeCenter = true; setCur(""); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
     // Changer de type de farine à la racine garde les branches ouvertes, mais le chemin sélectionné peut devenir caduc.
     $$("#tab-arbre [data-rtype]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.rtype]; store.set("treeRoot", treeRoot); renderArbre(); }));
@@ -650,6 +687,13 @@
     if (wrap && root && wrap.clientWidth) {
       if (treeCenter || !keep) { wrap.scrollLeft = root.offsetLeft + root.offsetWidth / 2 - wrap.clientWidth / 2; treeCenter = false; }
       else { wrap.scrollLeft = keep.x; wrap.scrollTop = keep.y; window.scrollTo(window.scrollX, keep.page); }
+      const cur = $("#tab-arbre .tn.cur");
+      if (treeFocus && cur) {   // pas de scrollIntoView : il fait aussi défiler les conteneurs parents
+        const cr = cur.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+        wrap.scrollLeft += cr.left + cr.width / 2 - (wr.left + wr.width / 2);
+        window.scrollBy(0, cr.top + cr.height / 2 - window.innerHeight / 2);
+      }
+      treeFocus = false;
     }
     markPair();
   }

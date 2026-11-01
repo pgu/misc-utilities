@@ -217,3 +217,5 @@ table.mx td .var { display:block; font-size:.66rem; line-height:1.15; font-style
 .vnote { margin:.5rem 0 0; padding:.45rem .6rem; border-left:3px solid var(--warn); background:var(--accent-soft); border-radius:6px; font-size:.82rem; color:var(--text); }
 .mx-wrap + .vnote, .tree-list .vnote { font-size:.78rem; }
 .chip .var { color:inherit; opacity:.8; }
+.aim { margin:0 0 .8rem; padding:.45rem .7rem; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:6px; font-size:.88rem; }
+.tree-list li.tgt .rl::before { content:"🎯 "; }
