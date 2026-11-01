@@ -284,20 +284,55 @@
     }
     return out.map((i) => REC[i]);
   }
-  function renderMatrice() {
+  // Tri de la matrice : clic sur ⇅ d'un en-tête = décroissant, puis croissant, puis ordre « voisins » d'origine. Les cases vides restent en bas.
+  let matSort = store.get("matSort", null);   // { k: "nom" | id d'ingrédient, dir: 1 | -1 }
+  let matSel = store.get("matSel", null);     // recette surlignée
+  function matRows() {
     const rows = orderedRecipes();
+    if (!matSort) return rows;
+    const { k, dir } = matSort, loc = lang === "en" ? "en" : "fr";
+    const val = (r) => r.ing[k];
+    return [...rows].sort((x, y) => {
+      if (k === "nom") return dir * nt(x).localeCompare(nt(y), loc);
+      const vx = val(x), vy = val(y);
+      if (vx === undefined || vy === undefined) return (vx === undefined) - (vy === undefined);
+      return dir * (vx - vy) || nt(x).localeCompare(nt(y), loc);
+    });
+  }
+  function renderMatrice() {
+    if (matSort && matSort.k !== "nom" && !ing(matSort.k)) matSort = null;
+    const rows = matRows();
     const max = {}; ING.forEach((i) => (max[i.id] = Math.max(...REC.map((r) => r.ing[i.id] || 0))));
+    const sortBtn = (k) => {
+      const on = matSort && matSort.k === k;
+      return `<button class="srt${on ? " on" : ""}" data-sort="${k}" title="Trier" aria-label="Trier">${on ? (matSort.dir < 0 ? "▼" : "▲") : "⇅"}</button>`;
+    };
     $("#tab-matrice").innerHTML = `
-      <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. Touchez un en-tête de colonne pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai), un nom de recette pour la comparer (A/B).</p>
-      <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small></th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"><td class="rn" title="Comparer (A/B)">${nm(r)}</td>${ING.map((i) => {
+      <p class="hint">Chaque ligne est une recette (les plus proches sont voisines), chaque colonne un ingrédient. Plus la case est foncée, plus la quantité est grande. ⇅ trie par colonne (décroissant, croissant, ordre d'origine). Touchez un nom d'ingrédient pour l'ajouter ou le retirer du garde-manger (en vert = je l'ai), une ligne pour la surligner, un nom de recette pour la comparer (A/B).</p>
+      <div class="mx-wrap"><table class="mx"><thead><tr><th class="rn">Recette ${sortBtn("nom")}</th>${ING.map((i) => `<th data-ing="${i.id}" class="${pantry.has(i.id) ? "on" : ""}" title="${tip(i) || i.unite}">${nm(i)}<br><small>${i.unite || "pièces"}</small><br>${sortBtn(i.id)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r) => `<tr data-rid="${r.id}"${r.id === matSel ? ' class="sel"' : ""}><td class="rn" title="Comparer (A/B)">${nm(r)}</td>${ING.map((i) => {
         const v = r.ing[i.id];
         if (v === undefined) return `<td class="v"></td>`;
         const a = (0.15 + 0.7 * (v / max[i.id])).toFixed(2);
         return `<td class="v" style="background:color-mix(in srgb, var(--accent) ${Math.round(a * 100)}%, transparent)">${v}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table></div>`;
-    $$("#tab-matrice th[data-ing]").forEach((th) => th.addEventListener("click", () => togglePantry(th.dataset.ing)));
-    $$("#tab-matrice tbody tr").forEach((tr) => tr.querySelector(".rn").addEventListener("click", () => pick(tr.dataset.rid)));
+    const wrap = $("#tab-matrice .mx-wrap");
+    $$("#tab-matrice th[data-ing]").forEach((th) => th.addEventListener("click", (e) => { if (!e.target.closest(".srt")) togglePantry(th.dataset.ing); }));
+    $$("#tab-matrice .srt").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const k = b.dataset.sort, first = k === "nom" ? 1 : -1;   // noms : A→Z d'abord ; quantités : les plus grandes d'abord
+      matSort = !matSort || matSort.k !== k ? { k, dir: first } : matSort.dir === first ? { k, dir: -first } : null;
+      store.set("matSort", matSort);
+      const sx = wrap.scrollLeft; renderMatrice(); $("#tab-matrice .mx-wrap").scrollLeft = sx;
+    }));
+    $$("#tab-matrice tbody tr").forEach((tr) => {
+      tr.addEventListener("click", (e) => {
+        matSel = matSel === tr.dataset.rid && !e.target.closest(".rn") ? null : tr.dataset.rid;
+        store.set("matSel", matSel);
+        $$("#tab-matrice tbody tr").forEach((x) => x.classList.toggle("sel", x.dataset.rid === matSel));
+      });
+      tr.querySelector(".rn").addEventListener("click", () => pick(tr.dataset.rid));
+    });
     markPair();
   }
 

@@ -200,3 +200,13 @@ table.mx td.rn:hover { color:var(--accent); }
 .tree-list li.done .st { color:var(--ok); font-weight:600; }
 .tree-list li.off { opacity:.4; }
 .tree-list li.off .rl { font-weight:400; }
+
+/* matrice : tri et surlignage de ligne */
+table.mx { --hl:color-mix(in srgb, var(--accent) 14%, transparent); }
+table.mx tbody tr { cursor:pointer; }
+table.mx tbody tr:hover td { background-image:linear-gradient(var(--hl), var(--hl)); }
+table.mx tbody tr.sel td { background-image:linear-gradient(var(--hl), var(--hl)), linear-gradient(var(--hl), var(--hl)); border-bottom-color:var(--accent); }
+table.mx tbody tr.sel td.rn { color:var(--accent); }
+table.mx .srt { font:inherit; font-size:.7rem; line-height:1; padding:.1rem .3rem; margin-top:.15rem; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--muted); cursor:pointer; }
+table.mx .srt:hover { border-color:var(--accent); color:var(--accent); }
+table.mx .srt.on { background:var(--accent); border-color:var(--accent); color:#fff; }
