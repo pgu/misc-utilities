@@ -520,6 +520,7 @@
   let treeStaples = store.get("treeStaples", true);
   let treeCur = store.get("treeCur", "");                  // clé du nœud sélectionné ("" = racine)
   const MAX_DEPTH = 8;
+  let treeCenter = true;   // centrer la racine seulement à l'affichage initial et quand on change de départ ; sinon on garde le défilement
 
   const treeBase = (path) => {
     const s = new Set(treeRoot[0] === "pantry" ? [...pantry] : treeRoot);
@@ -584,6 +585,7 @@
   }
 
   function renderArbre() {
+    const oldWrap = $("#tab-arbre .tree-wrap"), keep = oldWrap && oldWrap.clientWidth ? { x: oldWrap.scrollLeft, y: oldWrap.scrollTop, page: window.scrollY } : null;
     const startPantry = treeRoot[0] === "pantry", flourRoot = FLOURS.includes(treeRoot[0]);
     if (treeCur && !treeOpen.has(treeCur)) treeCur = "";
     const have0 = treeBase([]), pool0 = treePool([]), done0 = doable(have0, pool0), kids0 = treeSuggest(have0, pool0);
@@ -614,10 +616,10 @@
       ${treeList(curPath)}</div>`;
     const saveOpen = () => store.set("treeOpen", [...treeOpen]);
     const setCur = (k) => { treeCur = k; store.set("treeCur", k); };
-    $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); setCur(""); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
+    $("#rootSel").addEventListener("change", (e) => { treeRoot = [e.target.value]; treeOpen = new Set(); treeCenter = true; setCur(""); store.set("treeRoot", treeRoot); saveOpen(); renderArbre(); });
     // Changer de type de farine à la racine garde les branches ouvertes, mais le chemin sélectionné peut devenir caduc.
     $$("#tab-arbre [data-rtype]").forEach((b) => b.addEventListener("click", () => { treeRoot = [b.dataset.rtype]; store.set("treeRoot", treeRoot); renderArbre(); }));
-    $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); setCur(""); saveOpen(); renderArbre(); });
+    $("#treeReset").addEventListener("click", () => { treeOpen = new Set(); treeCenter = true; setCur(""); saveOpen(); renderArbre(); });
     $("#treeStaples").addEventListener("change", (e) => { treeStaples = e.target.checked; store.set("treeStaples", treeStaples); renderArbre(); });
     $$("#tab-arbre .tn[data-key]").forEach((el) => {
       // Un clic ouvre le nœud et le sélectionne ; un clic sur le nœud déjà sélectionné le referme (la sélection remonte d'un cran).
@@ -643,9 +645,12 @@
       if (treeCur === oldKey) setCur(newKey);
       renderArbre();
     }));
-    // L'arbre peut être plus large que l'écran : on centre la racine.
+    // L'arbre peut être plus large que l'écran : on centre la racine une fois, puis on restaure le défilement pour ne pas perdre le fil à chaque clic.
     const wrap = $("#tab-arbre .tree-wrap"), root = $("#tab-arbre .tn.root");
-    if (wrap && root && !wrap.hidden && wrap.clientWidth) wrap.scrollLeft = root.offsetLeft + root.offsetWidth / 2 - wrap.clientWidth / 2;
+    if (wrap && root && wrap.clientWidth) {
+      if (treeCenter || !keep) { wrap.scrollLeft = root.offsetLeft + root.offsetWidth / 2 - wrap.clientWidth / 2; treeCenter = false; }
+      else { wrap.scrollLeft = keep.x; wrap.scrollTop = keep.y; window.scrollTo(window.scrollX, keep.page); }
+    }
     markPair();
   }
 
